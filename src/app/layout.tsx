@@ -19,8 +19,14 @@ export const metadata: Metadata = {
   title: 'Rajya Simulator - Life Balance',
   description: 'A privacy-forward, gamified household financial governance system.',
   manifest: '/manifest.json',
+};
+
+export const viewport = {
   themeColor: '#0f172a',
-  viewport: 'minimum-scale=1, initial-scale=1, width=device-width, shrink-to-fit=no, viewport-fit=cover',
+  width: 'device-width',
+  initialScale: 1,
+  minimumScale: 1,
+  viewportFit: 'cover',
 };
 
 export default function RootLayout({
