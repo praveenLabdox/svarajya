@@ -116,6 +116,16 @@ export const IdentityStore = {
         const dup = _docs.find(d => d.normalizedDocNumber === doc.normalizedDocNumber && d.docType === doc.docType);
         if (dup) throw new Error("DUPLICATE");
         _docs.push(doc);
+
+        // Sync to API
+        if (typeof window !== 'undefined') {
+            fetch('/api/identity', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ...doc, isNew: true })
+            }).catch(e => console.error("Identity sync err", e));
+        }
+
         return doc;
     },
 
@@ -126,6 +136,16 @@ export const IdentityStore = {
         if (partial.docNumber) {
             _docs[idx].normalizedDocNumber = normalizeDocNumber(partial.docNumber);
         }
+
+        // Sync update
+        if (typeof window !== 'undefined') {
+            fetch('/api/identity', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ..._docs[idx], isUpdate: true }) // passing flag
+            }).catch(e => console.error("Identity sync err", e));
+        }
+
         return _docs[idx];
     },
 
@@ -226,6 +246,23 @@ export const IdentityStore = {
         }
         if (data.email) {
             this.addContact("email", data.email, "Primary");
+        }
+    },
+
+    // ——— Hydrate from Server ———
+    async hydrate() {
+        if (typeof window !== 'undefined') {
+            try {
+                const res = await fetch('/api/identity');
+                if (res.ok) {
+                    const dbDocs = await res.json();
+                    if (dbDocs && dbDocs.length > 0) {
+                        _docs = [...dbDocs];
+                    }
+                }
+            } catch (err) {
+                console.error("Failed to hydrate identity", err);
+            }
         }
     },
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
@@ -20,9 +20,15 @@ function ProgressBar({ step }: { step: number }) {
 
 export default function OccupationStep() {
     const router = useRouter();
-    const [selected, setSelected] = useState(OnboardingStore.get().occupationType || "");
-    const [otherText, setOtherText] = useState(OnboardingStore.get().occupationOther || "");
+    const [selected, setSelected] = useState("");
+    const [otherText, setOtherText] = useState("");
     const [error, setError] = useState("");
+
+    useEffect(() => {
+        const stored = OnboardingStore.get();
+        if (stored.occupationType) setSelected(stored.occupationType);
+        if (stored.occupationOther) setOtherText(stored.occupationOther);
+    }, []);
 
     const handleContinue = () => {
         if (!selected) { setError("Please choose one option."); return; }

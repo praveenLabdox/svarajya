@@ -12,11 +12,11 @@ export type VaultFolder =
 
 export interface VaultFile {
     id: string;
+    vaultFileId?: string; // Reference to the secure OPFS Blob URL id
     folder: VaultFolder;
     name: string;
     type: string; // MIME type
     size: number; // bytes
-    blob: Blob;
     createdAt: number; // timestamp
     tags?: string[]; // e.g. family member name
     notes?: string; // custom notes
@@ -47,17 +47,24 @@ async function getDB() {
 }
 
 export const Vault = {
-    /** Save a file blob to a folder. Returns the new file's ID. */
+    /** Save a file to OPFS, record metadata to IndexedDB. Returns the new file's ID. */
     async saveFile(folder: VaultFolder, file: File, tags?: string[]): Promise<string> {
+        const { LocalVaultEngine } = await import("./localVaultEngine");
+        
         const db = await getDB();
         const id = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        
+        // 1. Physically store the file in origin-private file system sandbox
+        const vaultFileId = await LocalVaultEngine.storeDocument(file, folder);
+
+        // 2. Write the metadata mapping into IndexedDB
         const record: VaultFile = {
             id,
+            vaultFileId,
             folder,
             name: file.name,
             type: file.type,
             size: file.size,
-            blob: file,
             createdAt: Date.now(),
             tags,
         };
@@ -77,9 +84,14 @@ export const Vault = {
         return db.getAll("vault");
     },
 
-    /** Delete a file by its ID. */
+    /** Delete a file by its ID within metadata mapping AND OPFS physical filesystem. */
     async deleteFile(id: string): Promise<void> {
         const db = await getDB();
+        const file = await db.get("vault", id);
+        if (file && file.vaultFileId) {
+            const { LocalVaultEngine } = await import("./localVaultEngine");
+            await LocalVaultEngine.deleteDocument(file.vaultFileId);
+        }
         await db.delete("vault", id);
     },
 
@@ -112,7 +124,9 @@ export const Vault = {
     async getPreviewUrl(id: string): Promise<string | null> {
         const db = await getDB();
         const file = await db.get("vault", id);
-        if (!file) return null;
-        return URL.createObjectURL(file.blob);
+        if (!file || !file.vaultFileId) return null;
+        
+        const { LocalVaultEngine } = await import("./localVaultEngine");
+        return await LocalVaultEngine.getDocumentBlobUrl(file.vaultFileId);
     },
 };

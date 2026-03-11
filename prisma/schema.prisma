@@ -1,0 +1,194 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ----------------------------------------------------
+// MODULE 1: FOUNDATION (Sthapana)
+// ----------------------------------------------------
+
+model UserProfile {
+  id              String    @id @default(uuid())
+  fullName        String
+  dob             DateTime?
+  lifePhase       String    @default("Nirmaan") // Yuva, Nirmaan, Sthirta, Parampara
+  maritalStatus   String?
+  occupationType  String?
+  occupationOther String?
+  email           String?   @unique
+  mobile          String?   @unique
+  priority        String? // Save, Protect, Grow, Organise
+
+  authId          String?   @unique // Links to Supabase auth.users.id
+
+  familyMembers FamilyMember[]
+  identityDocs  IdentityDoc[]
+  accounts      BankAccount[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model FamilyMember {
+  id              String    @id @default(uuid())
+  profileId       String
+  name            String
+  relationship    String
+  dob             DateTime?
+  dependent       Boolean   @default(false)
+  nomineeEligible Boolean   @default(false)
+  accessRole      String    @default("None") // Viewer, Executor, Emergency-only, None
+
+  profile UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ----------------------------------------------------
+// MODULE 2: IDENTITY VAULT (Pehchaan)
+// ----------------------------------------------------
+
+model IdentityDoc {
+  id                  String @id @default(uuid())
+  profileId           String
+  docType             String // aadhaar, pan, passport, dl, voter, other
+  docNumber           String
+  normalizedDocNumber String
+  nameOnDoc           String
+
+  dobOnDoc     DateTime?
+  expiryDate   DateTime?
+  issueDate    DateTime?
+  placeOfIssue String?
+  notes        String?
+  vaultFileId  String?
+  storageMode  String    @default("local") // local, folder, cloud
+
+  verificationStatus String    @default("not_verified") // not_verified, self, govt, ca, agent, family
+  verifiedDate       DateTime?
+  verifiedBy         String?
+
+  profile UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([normalizedDocNumber, docType])
+}
+
+// ----------------------------------------------------
+// MODULE 4 & 5: KOSH (Income) & VYAYA (Expenses)
+// ----------------------------------------------------
+
+model IncomeEntry {
+  id              String   @id @default(uuid())
+  profileId       String
+  accountId       String? // Optional linkage to BankAccount
+  amount          Float
+  date            DateTime
+  source          String // Salary, Business, Freelance, Rental, Dividend, Interest, Other
+  isRecurring     Boolean  @default(false)
+  frequency       String? // monthly, quarterly, annual
+  creditAccountId String? // Overlaps with BankAccount
+  description     String?
+
+  createdAt DateTime @default(now())
+}
+
+model ExpenseEntry {
+  id                   String   @id @default(uuid())
+  profileId            String
+  amount               Float
+  date                 DateTime
+  categoryId           String // housing, food, transport, utilities, health, debt, etc
+  paymentMode          String // upi, cc, dc, netbanking, cash
+  isRecurring          Boolean  @default(false)
+  frequency            String? // monthly, quarterly, annual
+  description          String?
+  linkedFamilyMemberId String?
+  paidFromAccountId    String? // Overlaps with BankAccount
+
+  createdAt DateTime @default(now())
+}
+
+// ----------------------------------------------------
+// MODULE 6: BANK HUB (Pravah Mandal)
+// ----------------------------------------------------
+
+model BankAccount {
+  id           String  @id @default(uuid())
+  profileId    String
+  bankName     String // HDFC, SBI, etc
+  accountType  String // savings, current, salary, joint, od
+  nickname     String?
+  accountLast4 String
+
+  openingBalance    Float    @default(0)
+  latestBalance     Float    @default(0)
+  latestBalanceAsOf DateTime
+
+  status String @default("active") // active, dormant, closed
+
+  profile     UserProfile    @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  auditTrails BalanceAudit[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model BalanceAudit {
+  id          String   @id @default(uuid())
+  accountId   String
+  prevBalance Float
+  newBalance  Float
+  delta       Float
+  asOfDate    DateTime
+  recordedAt  DateTime @default(now())
+  note        String?
+  source      String   @default("manual") // manual, auto, reconciliation
+
+  account BankAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+}
+
+// ----------------------------------------------------
+// MODULE 3: CREDENTIALS (Kunji)
+// ----------------------------------------------------
+
+model PortalCredential {
+  id           String  @id @default(uuid())
+  profileId    String
+  platformName String
+  category     String // bank, tax, insurance, demat, subscription, utility, etc
+  subcategory  String?
+  websiteUrl   String?
+  appLink      String?
+
+  loginId              String
+  registeredMobileId   String?
+  registeredEmailId    String?
+  registrationDate     DateTime?
+  linkedFamilyMemberId String?
+
+  passwordStorageMode String // not_stored, encrypted
+  encryptedPassword   Json? // Stores the AES-GCM data object if encrypted
+
+  twoFAStatus      String    @default("unknown") // enabled, disabled, unknown
+  twoFAType        String? // otp, token, biometric, none
+  notes            String?
+  lastReviewedDate DateTime?
+
+  // Category specific (flattened for simplified querying/storage)
+  bankName             String?
+  linkedBusinessEntity String?
+  linkedCA             String?
+  nomineeAwareness     Boolean?
+  renewalDate          DateTime?
+  linkedAutoDebitBank  String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

@@ -9,6 +9,7 @@ import {
     TwoFAType
 } from "@/lib/credentialStore";
 import { IdentityStore } from "@/lib/identityStore";
+import { OnboardingStore } from "@/lib/onboardingStore";
 import { MasterPassphraseModal } from "@/components/credentials/MasterPassphraseModal";
 import { VideoTutorialPlaceholder } from "@/components/ui/VideoTutorialPlaceholder";
 
@@ -23,16 +24,32 @@ export default function AddPortalPage() {
     const [websiteUrl, setWebsiteUrl] = useState("");
     const [appLink, setAppLink] = useState("");
 
+    // Seed contacts
+    IdentityStore.seedFromOnboarding();
+    const initialContacts = IdentityStore.getContacts();
+    const initialMobiles = initialContacts.filter(c => c.type === "mobile");
+    const initialEmails = initialContacts.filter(c => c.type === "email");
+
     // Step 2 — Credentials & Category-specific
     const [loginId, setLoginId] = useState("");
-    const [registeredMobileId, setRegisteredMobileId] = useState("");
-    const [registeredEmailId, setRegisteredEmailId] = useState("");
+    const [registeredMobileId, setRegisteredMobileId] = useState(initialMobiles[0]?.id || "");
+    const [registeredEmailId, setRegisteredEmailId] = useState(initialEmails[0]?.id || "");
     const [registrationDate, setRegistrationDate] = useState("");
+    
+    // Contacts state
+    const [contacts, setContacts] = useState(initialContacts);
+    const [newMobile, setNewMobile] = useState("");
+    const [newEmail, setNewEmail] = useState("");
     const [passwordMode, setPasswordMode] = useState<PasswordStorageMode>("not_stored");
     const [rawPassword, setRawPassword] = useState("");
     const [twoFA, setTwoFA] = useState<TwoFAStatus>("unknown");
     const [twoFAType, setTwoFAType] = useState<TwoFAType>("unknown");
-    const [linkedFamilyId, setLinkedFamilyId] = useState("");
+
+    // Family members
+    const familyMembers = OnboardingStore.get().familyMembers || [];
+    const defaultExecutor = familyMembers.find(f => f.accessRole === "Executor") || familyMembers[0];
+    const [linkedFamilyId, setLinkedFamilyId] = useState(defaultExecutor ? defaultExecutor.id : "");
+
     const [notes, setNotes] = useState("");
 
     // Bank-specific
@@ -52,21 +69,43 @@ export default function AddPortalPage() {
     const [savedHealthScore, setSavedHealthScore] = useState(0);
     const [showPassModal, setShowPassModal] = useState<"create" | "unlock" | null>(null);
 
-    // Seed contacts from onboarding
-    IdentityStore.seedFromOnboarding();
-    const contacts = IdentityStore.getContacts();
     const mobiles = contacts.filter(c => c.type === "mobile");
     const emails = contacts.filter(c => c.type === "email");
 
-    if (mobiles.length > 0 && !registeredMobileId) setRegisteredMobileId(mobiles[0].id);
-    if (emails.length > 0 && !registeredEmailId) setRegisteredEmailId(emails[0].id);
+    const handleAddMobile = () => {
+        if (!newMobile.trim()) return;
+        const cp = IdentityStore.addContact("mobile", newMobile.trim());
+        setRegisteredMobileId(cp.id);
+        setNewMobile("");
+        setContacts(IdentityStore.getContacts());
+    };
+
+    const handleAddEmail = () => {
+        if (!newEmail.trim()) return;
+        const cp = IdentityStore.addContact("email", newEmail.trim());
+        setRegisteredEmailId(cp.id);
+        setNewEmail("");
+        setContacts(IdentityStore.getContacts());
+    };
 
     const tutorial = category ? CATEGORY_TUTORIALS[category] : null;
+
+    const existingPortals = CredentialStore.getPortals();
+    const duplicateUrl = websiteUrl.trim() && existingPortals.find(p => p.websiteUrl === websiteUrl.trim());
+    const duplicateBank = bankName && existingPortals.find(p => p.category === "bank" && p.bankName === bankName);
 
     // Step 1 validation
     const handleStep1Next = () => {
         if (!platformName.trim()) { setError("Platform name is required."); return; }
         if (!category) { setError("Please select a category."); return; }
+        if (websiteUrl.trim()) {
+            // Basic URL syntax check
+            const urlPattern = /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/i;
+            if (!urlPattern.test(websiteUrl.trim())) {
+                setError("Please enter a valid Website URL.");
+                return;
+            }
+        }
         setError("");
         setStep(2);
     };
@@ -74,6 +113,13 @@ export default function AddPortalPage() {
     // Step 2 save
     const handleSave = async () => {
         if (!loginId.trim()) { setError("Login ID is required."); return; }
+
+        if (registrationDate && renewalDate) {
+            if (new Date(renewalDate) < new Date(registrationDate)) {
+                setError("Renewal date cannot be before registration date.");
+                return;
+            }
+        }
 
         if (passwordMode === "encrypted") {
             if (!CredentialStore.isVaultCreated()) { setShowPassModal("create"); return; }
@@ -333,6 +379,9 @@ export default function AddPortalPage() {
                                     <option value="">Select bank...</option>
                                     {INDIAN_BANKS.map(b => <option key={b} value={b}>{b}</option>)}
                                 </select>
+                                {duplicateBank && (
+                                    <p className="text-[10px] text-amber-400">⚠ You already have a portal saved for {bankName}.</p>
+                                )}
                             </div>
                         )}
 
@@ -342,6 +391,9 @@ export default function AddPortalPage() {
                             <input type="url" placeholder="https://" value={websiteUrl}
                                 onChange={e => setWebsiteUrl(e.target.value)}
                                 className="w-full bg-white/6 border border-white/15 rounded-xl px-3 py-3 text-sm text-white placeholder-white/20 focus:outline-none focus:border-amber-400/60" />
+                            {duplicateUrl && (
+                                <p className="text-[10px] text-amber-400">⚠ A portal with this URL already exists in your vault.</p>
+                            )}
                         </div>
 
                         <div className="space-y-2">
@@ -380,26 +432,39 @@ export default function AddPortalPage() {
                         {/* Registered Mobile */}
                         <div className="space-y-2">
                             <label className="text-xs text-white/40">Registered Mobile</label>
-                            <select value={registeredMobileId} onChange={e => setRegisteredMobileId(e.target.value)}
+                            <select value={registeredMobileId === "add_new" ? "add_new" : registeredMobileId} onChange={e => setRegisteredMobileId(e.target.value)}
                                 className="w-full bg-white/6 border border-white/15 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none">
                                 <option value="">Select mobile</option>
                                 {mobiles.map(c => <option key={c.id} value={c.id}>{c.value} {c.label ? `(${c.label})` : ""}</option>)}
+                                <option value="add_new">+ Add New Mobile</option>
                             </select>
-                            {mobiles.length === 0 && (
-                                <p className="text-[10px] text-amber-400/50">
-                                    No mobiles found. <button onClick={() => router.push("/identity")} className="underline">Add in Pehchaan Vault</button>
-                                </p>
+                            {registeredMobileId === "add_new" && (
+                                <div className="flex gap-2">
+                                    <input type="text" placeholder="Enter new mobile" value={newMobile} onChange={e => setNewMobile(e.target.value)} 
+                                        className="flex-1 bg-white/6 border border-white/15 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-400/60" />
+                                    <button type="button" onClick={handleAddMobile}
+                                        className="bg-amber-400/20 text-amber-400 px-3 py-2 rounded-xl text-sm border border-amber-400/40">Add</button>
+                                </div>
                             )}
                         </div>
 
                         {/* Registered Email */}
                         <div className="space-y-2">
                             <label className="text-xs text-white/40">Registered Email</label>
-                            <select value={registeredEmailId} onChange={e => setRegisteredEmailId(e.target.value)}
+                            <select value={registeredEmailId === "add_new" ? "add_new" : registeredEmailId} onChange={e => setRegisteredEmailId(e.target.value)}
                                 className="w-full bg-white/6 border border-white/15 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none">
                                 <option value="">Select email</option>
                                 {emails.map(c => <option key={c.id} value={c.id}>{c.value} {c.label ? `(${c.label})` : ""}</option>)}
+                                <option value="add_new">+ Add New Email</option>
                             </select>
+                            {registeredEmailId === "add_new" && (
+                                <div className="flex gap-2">
+                                    <input type="email" placeholder="Enter new email" value={newEmail} onChange={e => setNewEmail(e.target.value)} 
+                                        className="flex-1 bg-white/6 border border-white/15 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-400/60" />
+                                    <button type="button" onClick={handleAddEmail}
+                                        className="bg-amber-400/20 text-amber-400 px-3 py-2 rounded-xl text-sm border border-amber-400/40">Add</button>
+                                </div>
+                            )}
                         </div>
 
                         {/* Registration Date */}
@@ -549,8 +614,17 @@ export default function AddPortalPage() {
                             <select value={linkedFamilyId} onChange={e => setLinkedFamilyId(e.target.value)}
                                 className="w-full bg-white/6 border border-white/15 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none">
                                 <option value="">Select family member</option>
+                                {familyMembers.filter(f => f.accessRole === "Executor" && f.relationship !== "Child").map(f => (
+                                    <option key={f.id} value={f.id}>{f.name} ({f.relationship})</option>
+                                ))}
+                                <option value="add_new">+ Add valid Executor</option>
                             </select>
-                            <p className="text-[10px] text-white/20">Family members from Foundation module appear here.</p>
+                            {linkedFamilyId === "add_new" && (
+                                <p className="text-[10px] text-amber-400">
+                                    Please go to <button onClick={() => router.push("/foundation/family")} className="underline font-bold">Foundation &gt; Family</button> to add a valid Executor (cannot be a child).
+                                </p>
+                            )}
+                            <p className="text-[10px] text-white/20">Only non-child members with Executor access appear here.</p>
                         </div>
 
                         {/* Notes */}

@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, HardDrive, FolderOpen, Cloud, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, HardDrive, FolderOpen, Cloud, CheckCircle2, Download } from "lucide-react";
 import { IdentityStore } from "@/lib/identityStore";
+import { VaultExporter } from "@/lib/vaultExporter";
 
 const MODES = [
     { id: "local", label: "Local Vault (This Browser)", desc: "Securely stored in your browser. No external access.", icon: <HardDrive className="w-5 h-5" />, recommended: true },
@@ -15,6 +16,16 @@ export default function VaultSettings() {
     const router = useRouter();
     const [mode, setMode] = useState<"local" | "folder" | "cloud">(IdentityStore.getStorageMode());
     const [saved, setSaved] = useState(false);
+    const [exporting, setExporting] = useState(false);
+
+    const handleExport = async () => {
+        setExporting(true);
+        const success = await VaultExporter.exportOPFSToZip();
+        setExporting(false);
+        if (!success) {
+            alert("Export failed or vault is empty.");
+        }
+    };
 
     const handleSave = () => {
         IdentityStore.setStorageMode(mode);
@@ -43,11 +54,31 @@ export default function VaultSettings() {
                     </div>
                 )}
 
-                <div className="flex-1 space-y-5">
-                    <p className="text-xs text-white/40 uppercase tracking-wider">Default Storage Location</p>
+                <div className="flex-1 space-y-7">
+                    
+                    {/* Vault Extraction Section */}
+                    <div className="space-y-3">
+                        <p className="text-xs text-white/40 uppercase tracking-wider">Vault Extraction</p>
+                        <div className="bg-white/5 border border-white/10 rounded-xl p-4">
+                            <p className="text-xs text-white/60 mb-3">
+                                Your documents are securely locked in the browser Sandbox (OPFS). You can extract them as a ZIP archive at any time to save them permanently to your device.
+                            </p>
+                            <button 
+                                onClick={handleExport}
+                                disabled={exporting}
+                                className="w-full flex items-center justify-center gap-2 bg-amber-400/10 text-amber-400 border border-amber-400/30 py-3 rounded-xl text-sm font-medium hover:bg-amber-400/20 transition-colors disabled:opacity-50"
+                            >
+                                <Download className="w-4 h-4" />
+                                {exporting ? "Packaging Vault..." : "Export Svarajya Nidhi to Zip"}
+                            </button>
+                        </div>
+                    </div>
 
                     <div className="space-y-3">
-                        {MODES.map(m => (
+                        <p className="text-xs text-white/40 uppercase tracking-wider">Default Storage Location</p>
+
+                        <div className="space-y-3">
+                            {MODES.map(m => (
                             <button key={m.id} onClick={() => setMode(m.id)}
                                 className={`w-full text-left p-4 rounded-xl border transition-all ${mode === m.id ? "bg-amber-400/10 border-amber-400" : "bg-white/5 border-white/10 hover:border-white/25"
                                     }`}>
@@ -64,6 +95,7 @@ export default function VaultSettings() {
                                 </div>
                             </button>
                         ))}
+                        </div>
                     </div>
 
                     {/* Trust bullets */}

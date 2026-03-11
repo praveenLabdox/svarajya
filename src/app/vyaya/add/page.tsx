@@ -139,28 +139,28 @@ export default function AddExpensePage() {
                 <div className="space-y-4 mb-4">
                     {/* Date */}
                     <div className="space-y-2">
-                        <label className="text-xs text-white/40">Date</label>
+                        <label className="text-xs font-medium text-white/70">Date</label>
                         <input type="date" value={date} onChange={e => setDate(e.target.value)}
                             className="w-full bg-white/6 border border-white/15 rounded-xl px-3 py-3 text-sm text-white focus:outline-none focus:border-amber-400/60" />
                     </div>
 
                     {/* Amount */}
                     <div className="space-y-2">
-                        <label className="text-xs text-white/40">Amount *</label>
+                        <label className="text-xs font-medium text-white/70">Amount *</label>
                         <div className="relative">
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-white/40">₹</span>
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-white/60">₹</span>
                             <input type="number" inputMode="numeric" placeholder="0" value={amount}
                                 onChange={e => { setAmount(e.target.value); setError(""); }}
-                                className="w-full bg-white/6 border border-white/15 rounded-xl pl-7 pr-3 py-3 text-sm text-white placeholder-white/20 focus:outline-none focus:border-amber-400/60" />
+                                className="w-full bg-white/6 border border-white/15 rounded-xl pl-7 pr-3 py-3 text-sm text-white placeholder-white/40 focus:outline-none focus:border-amber-400/60" />
                         </div>
                     </div>
 
                     {/* Category search + picker */}
                     <div className="space-y-2">
-                        <label className="text-xs text-white/40">Category <span className="text-white/20">(default: Other)</span></label>
+                        <label className="text-xs font-medium text-white/70">Category <span className="text-white/40 font-normal">(default: Other)</span></label>
                         <input type="text" placeholder="Search categories..." value={categorySearch}
                             onChange={e => setCategorySearch(e.target.value)}
-                            className="w-full bg-white/6 border border-white/15 rounded-xl px-3 py-2 text-xs text-white placeholder-white/20 focus:outline-none focus:border-amber-400/60" />
+                            className="w-full bg-white/6 border border-white/15 rounded-xl px-3 py-2 text-sm text-white placeholder-white/40 focus:outline-none focus:border-amber-400/60" />
                         <div className="flex flex-wrap gap-2 max-h-28 overflow-y-auto">
                             {filteredCategories.map(c => (
                                 <button key={c.id} onClick={() => { setCategoryId(c.id); setCategorySearch(""); }}
@@ -175,7 +175,7 @@ export default function AddExpensePage() {
 
                     {/* Payment Mode */}
                     <div className="space-y-2">
-                        <label className="text-xs text-white/40">Payment Mode</label>
+                        <label className="text-xs font-medium text-white/70">Payment Mode</label>
                         <div className="flex flex-wrap gap-2">
                             {PAYMENT_MODES.map(m => (
                                 <button key={m.id} onClick={() => setPaymentMode(m.id)}
@@ -202,7 +202,7 @@ export default function AddExpensePage() {
 
                     {recurring && (
                         <div className="space-y-2">
-                            <label className="text-xs text-white/40">Frequency</label>
+                            <label className="text-xs font-medium text-white/70">Frequency</label>
                             <div className="flex gap-2">
                                 {(["monthly", "quarterly", "annual"] as ExpenseFrequency[]).map(f => (
                                     <button key={f} onClick={() => setRecurringFrequency(f)}
@@ -219,30 +219,30 @@ export default function AddExpensePage() {
 
                 {/* ——— Optional Section (collapsed) ——— */}
                 <button onClick={() => setShowOptional(!showOptional)}
-                    className="w-full flex items-center justify-between bg-white/3 border border-white/8 rounded-xl px-3 py-2.5 mb-3 text-xs text-white/40">
+                    className="w-full flex items-center justify-between bg-white/3 border border-white/8 rounded-xl px-3 py-2.5 mb-3 text-sm text-white/70 hover:bg-white/5 transition-colors">
                     <span>Optional Details</span>
-                    {showOptional ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                    {showOptional ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                 </button>
 
                 {showOptional && (
                     <div className="space-y-4 mb-4">
                         <div className="space-y-2">
-                            <label className="text-xs text-white/40">Description</label>
+                            <label className="text-xs font-medium text-white/70">Description</label>
                             <input type="text" placeholder="What was this for?" value={description}
                                 onChange={e => setDescription(e.target.value)}
-                                className="w-full bg-white/6 border border-white/15 rounded-xl px-3 py-3 text-sm text-white placeholder-white/20 focus:outline-none focus:border-amber-400/60" />
+                                className="w-full bg-white/6 border border-white/15 rounded-xl px-3 py-3 text-sm text-white placeholder-white/40 focus:outline-none focus:border-amber-400/60" />
                         </div>
                         <div className="space-y-2">
-                            <label className="text-xs text-white/40">Linked Family Member <span className="text-white/20">(optional)</span></label>
+                            <label className="text-xs font-medium text-white/70">Linked Family Member <span className="text-white/40 font-normal">(optional)</span></label>
                             <select value={linkedFamilyId} onChange={e => setLinkedFamilyId(e.target.value)}
                                 className="w-full bg-white/6 border border-white/15 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none">
                                 <option value="">Select family member</option>
                             </select>
-                            <p className="text-[10px] text-white/20">Family members from Foundation module appear here.</p>
+                            <p className="text-[11px] text-white/40">Family members from Foundation module appear here.</p>
                         </div>
                         <div className="space-y-2">
-                            <label className="text-xs text-white/40">Paid From Account <span className="text-white/20">(Module 6)</span></label>
-                            <p className="text-[10px] text-white/25">Account linking will be available after Module 6 setup.</p>
+                            <label className="text-xs font-medium text-white/70">Paid From Account <span className="text-white/40 font-normal">(Module 6)</span></label>
+                            <p className="text-[11px] text-white/40">Account linking will be available after Module 6 setup.</p>
                         </div>
                     </div>
                 )}

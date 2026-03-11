@@ -85,17 +85,37 @@ export default function DocDetail() {
         let errorMsg = "";
 
         // Date validations
-        if (issueDate && expiryDate && new Date(issueDate) > new Date(expiryDate)) {
-            errorMsg = "Issue date cannot be after expiry date.";
-        }
-        if (foundationDob) {
-            if (issueDate && new Date(issueDate) < new Date(foundationDob)) {
-                errorMsg = "Issue date cannot be before birthdate.";
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        if (issueDate) {
+            const iDate = new Date(issueDate);
+            iDate.setHours(0,0,0,0);
+            if (iDate > today) {
+                errorMsg = "Issuance date cannot be a future date.";
+            } else if (foundationDob && iDate < new Date(foundationDob)) {
+                errorMsg = "Issuance date cannot be before your birthdate.";
             }
-            if (expiryDate && new Date(expiryDate) < new Date(foundationDob)) {
-                errorMsg = "Expiry date cannot be before birthdate.";
+        }
+
+        if (expiryDate && !errorMsg) {
+            const eDate = new Date(expiryDate);
+            eDate.setHours(0,0,0,0);
+            if (foundationDob && eDate < new Date(foundationDob)) {
+                errorMsg = "Expiry date cannot be before your birthdate.";
+            } else if (eDate < today) {
+                errorMsg = "This document is already expired! Please renew it and set a reminder.";
             }
         }
+
+        if (issueDate && expiryDate && !errorMsg) {
+            const iDate = new Date(issueDate);
+            const eDate = new Date(expiryDate);
+            if (iDate > eDate) {
+                errorMsg = "Issue date cannot be after expiry date.";
+            }
+        }
+
         if (errorMsg) {
             setDateError(errorMsg);
             return;

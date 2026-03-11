@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus, X, User as UserIcon, ShieldAlert } from "lucide-react";
+import { OnboardingStore } from "@/lib/onboardingStore";
 
 export type FamilyMember = {
     id: string;
@@ -47,6 +48,22 @@ export function FamilyTreeGame({ members, onAddMember, onRemoveMember }: FamilyT
         if (isDuplicate) {
             setErrorMsg("This person already exists in your Mandal.");
             return;
+        }
+
+        // Age/Date validations
+        const userDobStr = OnboardingStore.get().dob;
+        if (userDobStr && formData.dob) {
+            const userBirthYear = new Date(userDobStr).getFullYear();
+            const targetBirthYear = new Date(formData.dob).getFullYear();
+
+            if (formData.relationship === "Child" && targetBirthYear <= userBirthYear) {
+                setErrorMsg("A child's birth year cannot be before or the same as yours.");
+                return;
+            }
+            if (formData.relationship === "Parent" && targetBirthYear >= userBirthYear) {
+                setErrorMsg("A parent's birth year must be before yours.");
+                return;
+            }
         }
 
         onAddMember(formData);

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { ChevronDown, ChevronUp, ArrowLeft } from "lucide-react";
@@ -20,11 +20,17 @@ function ProgressBar({ step }: { step: number }) {
 
 export default function DOBStep() {
     const router = useRouter();
-    const [dob, setDob] = useState(OnboardingStore.get().dob || "");
-    const [lifePhase, setLifePhase] = useState(OnboardingStore.get().lifePhase || "");
+    const [dob, setDob] = useState("");
+    const [lifePhase, setLifePhase] = useState("");
     const [showPhaseEdit, setShowPhaseEdit] = useState(false);
     const [error, setError] = useState("");
     const [placed, setPlaced] = useState(false);
+
+    useEffect(() => {
+        const stored = OnboardingStore.get();
+        if (stored.dob) setDob(stored.dob);
+        if (stored.lifePhase) setLifePhase(stored.lifePhase);
+    }, []);
 
     const handleDobChange = (val: string) => {
         setDob(val);

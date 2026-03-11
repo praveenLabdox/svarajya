@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
@@ -20,8 +20,13 @@ function ProgressBar({ step }: { step: number }) {
 
 export default function StatusStep() {
     const router = useRouter();
-    const [selected, setSelected] = useState(OnboardingStore.get().maritalStatus || "");
+    const [selected, setSelected] = useState("");
     const [placed, setPlaced] = useState(false);
+
+    useEffect(() => {
+        const stored = OnboardingStore.get();
+        if (stored.maritalStatus) setSelected(stored.maritalStatus);
+    }, []);
 
     const handleSelect = (opt: string) => {
         setSelected(opt);

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { MessageSquare, ArrowLeft } from "lucide-react";
@@ -20,13 +20,19 @@ function ProgressBar({ step }: { step: number }) {
 
 export default function ContactStep() {
     const router = useRouter();
-    const [mobile, setMobile] = useState(OnboardingStore.get().mobile || "");
-    const [email, setEmail] = useState(OnboardingStore.get().email || "");
+    const [mobile, setMobile] = useState("");
+    const [email, setEmail] = useState("");
     const [whatsapp, setWhatsapp] = useState(false);
     const [otpState, setOtpState] = useState<"none" | "sending" | "sent" | "verified">("none");
     const [otpInput, setOtpInput] = useState("");
     const [error, setError] = useState("");
     const [unlocked, setUnlocked] = useState(false);
+
+    useEffect(() => {
+        const stored = OnboardingStore.get();
+        if (stored.mobile) setMobile(stored.mobile);
+        if (stored.email) setEmail(stored.email);
+    }, []);
 
     const handleSendOtp = async () => {
         if (mobile.replace(/\D/g, "").length < 10) {

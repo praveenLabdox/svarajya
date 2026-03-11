@@ -35,13 +35,15 @@ export function AlertToast() {
     }, [dismissed, visible]);
 
     // Auto-dismiss after 6s
+    // Auto-dismiss after 6s
     useEffect(() => {
-        if (!visible) return;
+        if (!visible || !alert) return;
         const timer = setTimeout(() => {
+            setDismissed(prev => new Set(prev).add(alert.id));
             setVisible(false);
         }, 6000);
         return () => clearTimeout(timer);
-    }, [visible]);
+    }, [visible, alert]);
 
     const handleDismiss = () => {
         if (alert) {
@@ -70,8 +72,8 @@ export function AlertToast() {
         <div className="fixed top-4 left-1/2 -translate-x-1/2 w-full max-w-md px-4 z-[60] animate-slide-down">
             <div
                 className={`rounded-xl p-4 shadow-2xl border flex items-start gap-3 cursor-pointer transition-all ${isWarning
-                        ? "bg-amber-50 border-amber-300 dark:bg-amber-950 dark:border-amber-700"
-                        : "bg-blue-50 border-blue-300 dark:bg-blue-950 dark:border-blue-700"
+                    ? "bg-amber-50 border-amber-300 dark:bg-amber-950 dark:border-amber-700"
+                    : "bg-blue-50 border-blue-300 dark:bg-blue-950 dark:border-blue-700"
                     }`}
                 onClick={handleTap}
             >

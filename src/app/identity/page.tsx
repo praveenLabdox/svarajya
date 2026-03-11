@@ -83,10 +83,10 @@ export default function IdentityHub() {
                     </div>
                 </div>
 
-                {/* Identity Confidence bar */}
+                {/* Average Seal Strength bar */}
                 <div className="bg-white/5 border border-white/10 rounded-xl p-3 mb-5 flex items-center gap-3">
                     <div className="flex-1">
-                        <p className="text-xs text-white/40">Identity Confidence</p>
+                        <p className="text-xs text-white/40">Average Document Seal Quality</p>
                         <div className="h-1 bg-white/8 rounded-full overflow-hidden mt-1">
                             <div className="h-full bg-amber-400 rounded-full transition-all" style={{ width: `${confidence}%` }} />
                         </div>

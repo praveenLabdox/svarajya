@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
+import { Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, CheckCircle2 } from "lucide-react";
 import { IdentityStore, DocType } from "@/lib/identityStore";
@@ -26,7 +27,7 @@ const SUGGESTED_SERVICES: Record<string, string[]> = {
 
 type Step = 1 | 2;
 
-export default function LinkWizard() {
+function LinkWizardForm() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const preDocId = searchParams.get("docId") || "";
@@ -236,5 +237,13 @@ export default function LinkWizard() {
                 </div>
             </div>
         </div>
+    );
+}
+
+export default function LinkWizard() {
+    return (
+        <Suspense fallback={<div className="min-h-screen bg-slate-950" />}>
+            <LinkWizardForm />
+        </Suspense>
     );
 }

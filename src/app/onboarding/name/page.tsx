@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
@@ -22,9 +22,14 @@ function ProgressBar({ step }: { step: number }) {
 
 export default function NameStep() {
     const router = useRouter();
-    const [name, setName] = useState(OnboardingStore.get().fullName || "");
+    const [name, setName] = useState("");
     const [placed, setPlaced] = useState(false);
     const [error, setError] = useState("");
+
+    useEffect(() => {
+        const stored = OnboardingStore.get().fullName;
+        if (stored) setName(stored);
+    }, []);
 
     const handleContinue = () => {
         const trimmed = name.trim();

@@ -5,11 +5,12 @@ import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import {
     Shield, BookOpen, Coins, Activity, Users, AlertCircle, Fingerprint, Key,
-    ChevronRight, Sun, Moon, Info
+    ChevronRight, Sun, Moon, Info, Droplets
 } from "lucide-react";
 import { IdentityStore } from "@/lib/identityStore";
 import { CredentialStore } from "@/lib/credentialStore";
 import { IncomeStore, formatRupee } from "@/lib/incomeStore";
+import { OnboardingStore } from "@/lib/onboardingStore";
 import { ThemeStore, ThemeMode } from "@/lib/themeStore";
 import { VideoTutorialPlaceholder } from "@/components/ui/VideoTutorialPlaceholder";
 
@@ -42,18 +43,31 @@ export default function Dashboard() {
     const koshMonthly = IncomeStore.getMonthlyNetIncome();
     const koshDesc = koshMonthly > 0 ? `${formatRupee(koshMonthly)}/mo • Strength: ${IncomeStore.getStrengthIndex().overall}` : "Income & treasury management";
 
+    // Dynamic Sthapana (Foundation) coverage
+    const onboardingData = OnboardingStore.get();
+    let sthapanaCompletion = 10; // Base score for starting
+    if (onboardingData.fullName) sthapanaCompletion += 40; // Profile done
+    if (onboardingData.familyMembers && onboardingData.familyMembers.length > 0) sthapanaCompletion += 50; // Family done
+
+    // In the future, we'll check for education data as the final 10-20% gap. 
+    // Right now, if they did profile + family they get 100% since education module isn't fully integrated into the store yet.
+    const sthapanaStatus = sthapanaCompletion >= 80 ? "secure" : "warning";
+
     const KINGDOM_ZONES = [
-        { id: 'foundation', title: 'Sthapana (Foundation)', route: '/foundation', icon: <BookOpen className="w-5 h-5" />, status: 'secure', completion: 100, desc: 'Profile, family & education' },
+        { id: 'foundation', title: 'Sthapana (Foundation)', route: '/foundation', icon: <BookOpen className="w-5 h-5" />, status: sthapanaStatus, completion: sthapanaCompletion, desc: 'Profile, family & education' },
         { id: 'identity', title: 'Pehchaan (Identity)', route: '/identity', icon: <Fingerprint className="w-5 h-5" />, status: identityStatus, completion: identityCompletion, desc: 'Your identity documents' },
         { id: 'credentials', title: 'Kunji (Credentials)', route: '/credentials', icon: <Key className="w-5 h-5" />, status: credStatus, completion: credCompletion, desc: 'Login portals & access' },
         { id: 'protection', title: 'Raksha (Protection)', route: '/raksha', icon: <Shield className="w-5 h-5" />, status: 'warning', completion: 40, desc: 'Insurance & risk cover' },
         { id: 'growth', title: 'Kosh (Treasury)', route: '/kosh', icon: <Coins className="w-5 h-5" />, status: koshStatus, completion: koshCompletion, desc: koshDesc },
+        { id: 'bank', title: 'Pravah (Liquidity)', route: '/bank', icon: <Droplets className="w-5 h-5" />, status: 'secure', completion: 100, desc: 'Bank accounts & cashflow' },
         { id: 'control', title: 'Rin (Control)', route: '/rin', icon: <Activity className="w-5 h-5" />, status: 'critical', completion: 10, desc: 'Debt & loan management' },
         { id: 'vyaya', title: 'Vyaya (Expenses)', route: '/vyaya', icon: <Coins className="w-5 h-5" />, status: 'warning', completion: 40, desc: 'Track and control leakage' },
         { id: 'legacy', title: 'Mitra (Legacy)', route: '/mitra', icon: <Users className="w-5 h-5" />, status: 'warning', completion: 30, desc: 'Trusted nominees & legacy' },
     ];
 
-    const stabilityScore = 52;
+    // Recalculate global stability score based on actual current completions
+    const totalCompletion = KINGDOM_ZONES.reduce((sum, zone) => sum + zone.completion, 0);
+    const stabilityScore = Math.round(totalCompletion / KINGDOM_ZONES.length);
 
     const getStatusConfig = (status: string) => {
         switch (status) {

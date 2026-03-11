@@ -2,9 +2,11 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
+import { Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, Eye, EyeOff, CheckCircle2 } from "lucide-react";
 import { IdentityStore, DocType } from "@/lib/identityStore";
+import { OnboardingStore } from "@/lib/onboardingStore";
 import { FileUploader } from "@/components/vault/FileUploader";
 
 const DOC_TYPES: { id: DocType; label: string }[] = [
@@ -16,7 +18,7 @@ const DOC_TYPES: { id: DocType; label: string }[] = [
     { id: "other", label: "Other" },
 ];
 
-export default function AddDocument() {
+function AddDocumentForm() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const preselectedType = searchParams.get("type") as DocType | null;
@@ -27,12 +29,18 @@ export default function AddDocument() {
     const [revealed, setRevealed] = useState(false);
     const [vaultFileId, setVaultFileId] = useState<string | null>(null);
     const [error, setError] = useState("");
+    const [mismatchReason, setMismatchReason] = useState("");
     const [saved, setSaved] = useState<{ id: string; strength: number; coverage: { filled: number; total: number } } | null>(null);
+
+    const existingDocs = IdentityStore.getDocs();
+    const profileName = OnboardingStore.get().fullName || "";
+    const isNameMismatched = nameOnDoc.trim().toLowerCase() !== profileName.trim().toLowerCase() && nameOnDoc.trim().length > 0;
 
     const handleSave = () => {
         if (!docType) { setError("Please select a document type."); return; }
         if (!docNumber.trim()) { setError("Document type and number are required."); return; }
         if (!nameOnDoc.trim()) { setError("Please enter the name as printed on the document."); return; }
+        if (isNameMismatched && !mismatchReason.trim()) { setError("Please provide a reason for the name mismatch."); return; }
 
         try {
             const doc = IdentityStore.addDoc({
@@ -40,6 +48,7 @@ export default function AddDocument() {
                 docNumber: docNumber.trim(),
                 nameOnDoc: nameOnDoc.trim(),
                 vaultFileId: vaultFileId || undefined,
+                notes: mismatchReason ? `Name mismatch reason: ${mismatchReason}` : undefined,
             });
             const strength = doc.vaultFileId ? 40 : 20;
             const coverage = IdentityStore.getCoverage();
@@ -142,18 +151,26 @@ export default function AddDocument() {
                     <div className="space-y-2">
                         <label className="text-xs text-white/40 uppercase tracking-wider">Document Type</label>
                         <div className="flex flex-wrap gap-2">
-                            {DOC_TYPES.map(dt => (
-                                <button
-                                    key={dt.id}
-                                    onClick={() => { setDocType(dt.id); setError(""); }}
-                                    className={`px-4 py-2.5 rounded-full border text-sm transition-all ${docType === dt.id
-                                        ? "bg-amber-400/15 border-amber-400 text-amber-400"
-                                        : "bg-white/5 border-white/10 text-white/55 hover:border-white/30"
-                                        }`}
-                                >
-                                    {dt.label}
-                                </button>
-                            ))}
+                            {DOC_TYPES.map(dt => {
+                                // Prevent duplicates for unique govt IDs
+                                const isUniqueGovtId = dt.id === "aadhaar" || dt.id === "pan" || dt.id === "passport" || dt.id === "voter" || dt.id === "dl";
+                                const alreadyExists = isUniqueGovtId && existingDocs.some(d => d.docType === dt.id);
+
+                                return (
+                                    <button
+                                        key={dt.id}
+                                        disabled={alreadyExists}
+                                        onClick={() => { setDocType(dt.id); setError(""); }}
+                                        className={`px-4 py-2.5 rounded-full border text-sm transition-all ${alreadyExists ? "bg-white/5 border-white/5 text-white/20 cursor-not-allowed" :
+                                                docType === dt.id
+                                                    ? "bg-amber-400/15 border-amber-400 text-amber-400"
+                                                    : "bg-white/5 border-white/10 text-white/55 hover:border-white/30"
+                                            }`}
+                                    >
+                                        {dt.label} {alreadyExists && "(Added)"}
+                                    </button>
+                                );
+                            })}
                         </div>
                     </div>
 
@@ -191,6 +208,18 @@ export default function AddDocument() {
                             placeholder="Enter full name as printed"
                             className="w-full bg-white/6 border border-white/15 rounded-xl px-4 py-3 text-white placeholder-white/25 focus:outline-none focus:border-amber-400/60 transition-colors"
                         />
+                        {isNameMismatched && (
+                            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="mt-3 bg-amber-500/10 border border-amber-500/20 rounded-xl p-3">
+                                <p className="text-xs text-amber-400/90 mb-2">⚠ Name differs from Foundation profile ({profileName}).</p>
+                                <input
+                                    type="text"
+                                    placeholder="Reason (e.g., Maiden name, Spelling error on doc)"
+                                    value={mismatchReason}
+                                    onChange={e => { setMismatchReason(e.target.value); setError(""); }}
+                                    className="w-full bg-black/40 border border-amber-500/20 rounded-lg px-3 py-2 text-xs text-amber-100 placeholder-amber-400/30 focus:outline-none focus:border-amber-400/50"
+                                />
+                            </motion.div>
+                        )}
                     </div>
 
                     {/* Upload (optional) */}
@@ -229,5 +258,13 @@ export default function AddDocument() {
                 </div>
             </div>
         </div>
+    );
+}
+
+export default function AddDocument() {
+    return (
+        <Suspense fallback={<div className="min-h-screen bg-slate-950" />}>
+            <AddDocumentForm />
+        </Suspense>
     );
 }

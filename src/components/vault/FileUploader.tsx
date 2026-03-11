@@ -2,8 +2,10 @@
 
 import { useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { Upload, FileText, X, Cloud, CloudOff } from "lucide-react";
+import { Upload, FileText, X, Cloud, CloudOff, Loader2 } from "lucide-react";
 import { Vault, VaultFolder } from "@/lib/vault";
+import { CloudDriveSync } from "@/lib/cloudDriveSync";
+import { createClient } from "@/lib/supabase/client";
 
 interface FileUploaderProps {
     folder: VaultFolder;
@@ -31,6 +33,9 @@ export function FileUploader({
     const [docName, setDocName] = useState("");
     const [docNotes, setDocNotes] = useState("");
     const [detailsSaved, setDetailsSaved] = useState(false);
+    const [savedFileObj, setSavedFileObj] = useState<File | null>(null);
+    const [syncingCloud, setSyncingCloud] = useState(false);
+    const supabase = createClient();
 
     const handleFile = async (file: File) => {
         setUploading(true);
@@ -41,6 +46,7 @@ export function FileUploader({
         const id = await Vault.saveFile(folder, file, tags);
         setUploaded({ name: file.name, id });
         setDocName(file.name);
+        setSavedFileObj(file);
         setUploading(false);
         onUploaded?.(id, file.name);
     };
@@ -62,6 +68,36 @@ export function FileUploader({
         setDragging(false);
         const file = e.dataTransfer.files?.[0];
         if (file) handleFile(file);
+    };
+
+    const handleCloudToggle = async () => {
+        const newVal = !cloudOptIn;
+        setCloudOptIn(newVal);
+
+        if (newVal && savedFileObj) {
+            setSyncingCloud(true);
+            try {
+                const { data } = await supabase.auth.getSession();
+                const providerToken = data.session?.provider_token;
+                
+                if (!providerToken) {
+                    alert("Google Drive sync failed. Please log out and log back in with Google.");
+                    setCloudOptIn(false);
+                    setSyncingCloud(false);
+                    return;
+                }
+
+                const success = await CloudDriveSync.uploadToGoogleDrive(savedFileObj, docName || savedFileObj.name, providerToken);
+                if (!success) {
+                    alert("Failed to upload to Google Drive.");
+                    setCloudOptIn(false);
+                }
+            } catch (err) {
+                console.error("Cloud toggle error:", err);
+                setCloudOptIn(false);
+            }
+            setSyncingCloud(false);
+        }
     };
 
     if (compact && !uploaded) {
@@ -157,18 +193,21 @@ export function FileUploader({
                     {/* Cloud opt-in */}
                     <div className="flex items-center justify-between mt-3 pt-3 border-t border-white/8">
                         <div className="flex items-center gap-2">
-                            {cloudOptIn ? <Cloud className="w-3.5 h-3.5 text-blue-400" /> : <CloudOff className="w-3.5 h-3.5 text-white/25" />}
-                            <span className="text-xs text-white/40">Also store in cloud</span>
+                            {syncingCloud ? <Loader2 className="w-3.5 h-3.5 text-blue-400 animate-spin" /> : cloudOptIn ? <Cloud className="w-3.5 h-3.5 text-blue-400" /> : <CloudOff className="w-3.5 h-3.5 text-white/25" />}
+                            <span className="text-xs text-white/40">{syncingCloud ? "Syncing..." : cloudOptIn ? "Synced to Google Drive" : "Also store in cloud"}</span>
                         </div>
                         <button
-                            onClick={() => setCloudOptIn(!cloudOptIn)}
-                            className={`w-8 h-5 rounded-full transition-colors ${cloudOptIn ? "bg-blue-500" : "bg-white/15"}`}
+                            onClick={handleCloudToggle}
+                            disabled={syncingCloud}
+                            className={`w-8 h-5 rounded-full transition-colors disabled:opacity-50 ${cloudOptIn ? "bg-blue-500" : "bg-white/15"}`}
                         >
                             <div className={`w-3.5 h-3.5 rounded-full bg-white shadow transition-transform mx-0.5 ${cloudOptIn ? "translate-x-3" : ""}`} />
                         </button>
                     </div>
-                    {cloudOptIn && (
-                        <p className="text-[10px] text-blue-400/60 mt-1">Cloud sync requires setup — we&apos;ll guide you when you&apos;re ready.</p>
+                    {!cloudOptIn && (
+                        <p className="text-[10px] text-blue-400/60 mt-1">
+                            Cloud sync is currently disabled to ensure 100% zero-knowledge privacy. Your file remains safely inside your device's OPFS Local Vault, accessible only by you.
+                        </p>
                     )}
                 </motion.div>
             )}

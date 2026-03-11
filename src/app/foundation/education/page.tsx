@@ -13,6 +13,7 @@ interface EducationEntry {
     year: string;
     specialization: string;
     hasLoan: boolean;
+    certificateId?: string;
 }
 
 const DEGREE_OPTIONS = [
@@ -22,6 +23,8 @@ const DEGREE_OPTIONS = [
     "Master's (M.Tech / MBA)", "PhD / Doctorate", "Professional (CA / CS / CMA)",
     "Professional (MBBS / MD)", "Professional (LLB / LLM)", "Other",
 ];
+
+import { Vault } from "@/lib/vault";
 
 export default function EducationPage() {
     const router = useRouter();
@@ -36,7 +39,7 @@ export default function EducationPage() {
 
     const handleAddEntry = () => {
         if (!degree || !institution) return;
-        const entry: EducationEntry = { degree, institution, year, specialization, hasLoan };
+        const entry: EducationEntry = { degree, institution, year, specialization, hasLoan, certificateId: uploadedCerts[0] };
         setEntries([...entries, entry]);
         // Reset form
         setDegree("");
@@ -44,7 +47,17 @@ export default function EducationPage() {
         setYear("");
         setSpecialization("");
         setHasLoan(false);
+        setUploadedCerts([]);
         setShowForm(false);
+    };
+
+    const handleViewCert = async (certId: string) => {
+        const url = await Vault.getPreviewUrl(certId);
+        if (url) {
+            window.open(url, '_blank');
+        } else {
+            alert('File not found in your secure local vault.');
+        }
     };
 
     const handleFinish = () => {
@@ -91,6 +104,11 @@ export default function EducationPage() {
                             </div>
                             <p className="text-xs text-[var(--color-rajya-muted)]">{e.institution}{e.year ? ` • ${e.year}` : ""}</p>
                             {e.specialization && <p className="text-[10px] text-[var(--color-rajya-muted)]/60 mt-0.5">{e.specialization}</p>}
+                            {e.certificateId && (
+                                <button type="button" onClick={() => handleViewCert(e.certificateId!)} className="mt-2 text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded flex items-center gap-1 hover:bg-emerald-500/20 transition-colors">
+                                    <CheckCircle2 className="w-3 h-3" /> View Local Vault Image
+                                </button>
+                            )}
                             {e.hasLoan && (
                                 <span className="mt-2 inline-block text-[10px] bg-[var(--color-rajya-danger)]/10 text-[var(--color-rajya-danger)] border border-[var(--color-rajya-danger)]/20 px-2 py-0.5 rounded-full">
                                     ⚠ Education Loan Active
