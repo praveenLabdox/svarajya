@@ -8,6 +8,7 @@ import { ArrowLeft, Eye, EyeOff, CheckCircle2 } from "lucide-react";
 import { IdentityStore, DocType } from "@/lib/identityStore";
 import { OnboardingStore } from "@/lib/onboardingStore";
 import { FileUploader } from "@/components/vault/FileUploader";
+import { DocumentValidator } from "@/lib/documentValidation";
 
 const DOC_TYPES: { id: DocType; label: string }[] = [
     { id: "aadhaar", label: "Aadhaar" },
@@ -29,6 +30,8 @@ function AddDocumentForm() {
     const [revealed, setRevealed] = useState(false);
     const [vaultFileId, setVaultFileId] = useState<string | null>(null);
     const [error, setError] = useState("");
+    const [warning, setWarning] = useState("");
+    const [acknowledgedWarning, setAcknowledgedWarning] = useState(false);
     const [mismatchReason, setMismatchReason] = useState("");
     const [saved, setSaved] = useState<{ id: string; strength: number; coverage: { filled: number; total: number } } | null>(null);
 
@@ -37,15 +40,30 @@ function AddDocumentForm() {
     const isNameMismatched = nameOnDoc.trim().toLowerCase() !== profileName.trim().toLowerCase() && nameOnDoc.trim().length > 0;
 
     const handleSave = () => {
+        setError("");
+
         if (!docType) { setError("Please select a document type."); return; }
         if (!docNumber.trim()) { setError("Document type and number are required."); return; }
         if (!nameOnDoc.trim()) { setError("Please enter the name as printed on the document."); return; }
         if (isNameMismatched && !mismatchReason.trim()) { setError("Please provide a reason for the name mismatch."); return; }
 
+        const valResult = DocumentValidator.validateByType(docType, docNumber);
+
+        if (valResult.status === "invalid") {
+            setError(valResult.message);
+            return;
+        }
+
+        if (valResult.status === "warning" && !acknowledgedWarning) {
+            setWarning(valResult.message);
+            setAcknowledgedWarning(true);
+            return;
+        }
+
         try {
             const doc = IdentityStore.addDoc({
                 docType,
-                docNumber: docNumber.trim(),
+                docNumber: valResult.normalizedValue,
                 nameOnDoc: nameOnDoc.trim(),
                 vaultFileId: vaultFileId || undefined,
                 notes: mismatchReason ? `Name mismatch reason: ${mismatchReason}` : undefined,
@@ -160,7 +178,7 @@ function AddDocumentForm() {
                                     <button
                                         key={dt.id}
                                         disabled={alreadyExists}
-                                        onClick={() => { setDocType(dt.id); setError(""); }}
+                                        onClick={() => { setDocType(dt.id); setError(""); setWarning(""); setAcknowledgedWarning(false); }}
                                         className={`px-4 py-2.5 rounded-full border text-sm transition-all ${alreadyExists ? "bg-white/5 border-white/5 text-white/20 cursor-not-allowed" :
                                                 docType === dt.id
                                                     ? "bg-amber-400/15 border-amber-400 text-amber-400"
@@ -181,7 +199,7 @@ function AddDocumentForm() {
                             <input
                                 type="text"
                                 value={revealed ? docNumber : maskedValue}
-                                onChange={e => { setDocNumber(e.target.value); setRevealed(true); setError(""); }}
+                                onChange={e => { setDocNumber(e.target.value); setRevealed(true); setError(""); setWarning(""); setAcknowledgedWarning(false); }}
                                 onFocus={() => setRevealed(true)}
                                 onBlur={() => setRevealed(false)}
                                 placeholder="Enter document number"
@@ -244,6 +262,11 @@ function AddDocumentForm() {
                     {error && (
                         <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-red-400 text-xs">
                             ⚠ {error}
+                        </motion.p>
+                    )}
+                    {warning && !error && (
+                        <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-amber-400 text-xs bg-amber-400/10 p-2 rounded-lg border border-amber-400/20">
+                            ⚠ {warning} Tap Save again to proceed anyway.
                         </motion.p>
                     )}
                 </div>

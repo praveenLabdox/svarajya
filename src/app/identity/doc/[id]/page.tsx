@@ -48,6 +48,8 @@ export default function DocDetail() {
     const [newEmail, setNewEmail] = useState("");
     const [saved, setSaved] = useState(false);
     const [dateError, setDateError] = useState("");
+    const [dateWarning, setDateWarning] = useState("");
+    const [acknowledgedDateWarning, setAcknowledgedDateWarning] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
 
     if (!doc) {
@@ -83,6 +85,7 @@ export default function DocDetail() {
 
     const handleSave = () => {
         let errorMsg = "";
+        let warningMsg = "";
 
         // Date validations
         const today = new Date();
@@ -104,7 +107,7 @@ export default function DocDetail() {
             if (foundationDob && eDate < new Date(foundationDob)) {
                 errorMsg = "Expiry date cannot be before your birthdate.";
             } else if (eDate < today) {
-                errorMsg = "This document is already expired! Please renew it and set a reminder.";
+                warningMsg = "This document appears to be expired. Please review before proceeding.";
             }
         }
 
@@ -118,10 +121,18 @@ export default function DocDetail() {
 
         if (errorMsg) {
             setDateError(errorMsg);
+            setDateWarning("");
+            return;
+        }
+
+        if (warningMsg && !acknowledgedDateWarning) {
+            setDateWarning(warningMsg);
+            setAcknowledgedDateWarning(true);
             return;
         }
 
         setDateError("");
+        setDateWarning("");
         IdentityStore.updateDoc(docId, {
             dobOnDoc: dobOnDoc || undefined,
             expiryDate: expiryDate || undefined,
@@ -230,6 +241,8 @@ export default function DocDetail() {
                             <label className="text-[11px] text-white/70">Expiry Date</label>
                             <input type="date" value={expiryDate} onChange={e => {
                                 setExpiryDate(e.target.value);
+                                setAcknowledgedDateWarning(false);
+                                setDateWarning("");
                             }} disabled={!editing}
                                 className={`w-full bg-white/10 border rounded-xl px-3 py-2.5 text-sm text-white disabled:opacity-50 focus:outline-none focus:border-amber-400/60 ${dateError && dateError.includes("Expiry") ? "border-red-500/50" : "border-white/20"}`} />
                         </div>
@@ -247,10 +260,16 @@ export default function DocDetail() {
                         </div>
                     </div>
 
-                    {/* Date validation error */}
+                    {/* Date validation messages */}
                     {dateError && (
                         <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-2.5 flex items-center gap-2">
                             <span className="text-xs text-red-400">⚠ {dateError}</span>
+                        </div>
+                    )}
+                    {dateWarning && !dateError && (
+                        <div className="bg-amber-400/10 border border-amber-400/30 rounded-xl p-2.5 flex flex-col gap-1">
+                            <span className="text-xs text-amber-400">⚠ {dateWarning}</span>
+                            <span className="text-[10px] text-amber-400/60">Tap "Save Document Details" again to proceed.</span>
                         </div>
                     )}
 
