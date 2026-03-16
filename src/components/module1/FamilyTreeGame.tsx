@@ -8,6 +8,8 @@ export type FamilyMember = {
     name: string;
     relationship: string;
     dob: string;
+    phone?: string;
+    email?: string;
     dependent: boolean;
     nomineeEligible: boolean;
     accessRole: "Viewer" | "Executor" | "Emergency-only" | "None";
@@ -31,6 +33,8 @@ export function FamilyTreeGame({ members, onAddMember, onRemoveMember }: FamilyT
         name: "",
         relationship: "Spouse",
         dob: "",
+        phone: "",
+        email: "",
         dependent: false,
         nomineeEligible: true,
         accessRole: "None" as FamilyMember["accessRole"]
@@ -51,10 +55,22 @@ export function FamilyTreeGame({ members, onAddMember, onRemoveMember }: FamilyT
         }
 
         // Age/Date validations
+        const currentYear = new Date().getFullYear();
+        const targetDate = new Date(formData.dob);
+        const targetBirthYear = targetDate.getFullYear();
+
+        if (targetBirthYear > currentYear) {
+            setErrorMsg("Birth year cannot be in the future.");
+            return;
+        }
+        if (targetBirthYear < 1900) {
+            setErrorMsg("Birth year seems invalid.");
+            return;
+        }
+
         const userDobStr = OnboardingStore.get().dob;
         if (userDobStr && formData.dob) {
             const userBirthYear = new Date(userDobStr).getFullYear();
-            const targetBirthYear = new Date(formData.dob).getFullYear();
 
             if (formData.relationship === "Child" && targetBirthYear <= userBirthYear) {
                 setErrorMsg("A child's birth year cannot be before or the same as yours.");
@@ -66,8 +82,8 @@ export function FamilyTreeGame({ members, onAddMember, onRemoveMember }: FamilyT
             }
         }
 
-        onAddMember(formData);
-        setFormData({ name: "", relationship: "Spouse", dob: "", dependent: false, nomineeEligible: true, accessRole: "None" });
+        onAddMember({ ...formData, phone: formData.phone || undefined, email: formData.email || undefined });
+        setFormData({ name: "", relationship: "Spouse", dob: "", phone: "", email: "", dependent: false, nomineeEligible: true, accessRole: "None" });
         setIsAdding(false);
         setErrorMsg("");
     };
@@ -181,6 +197,11 @@ export function FamilyTreeGame({ members, onAddMember, onRemoveMember }: FamilyT
                                 <select value={formData.relationship} onChange={e => setFormData({ ...formData, relationship: e.target.value })} className="w-full bg-black/50 border border-white/20 rounded-xl px-4 py-3 text-sm text-[var(--color-rajya-text)] focus:outline-none focus:border-[var(--color-rajya-accent)]">
                                     {RELATION_OPTIONS.map(opt => <option key={opt} value={opt} className="bg-[var(--color-rajya-card)]">{opt}</option>)}
                                 </select>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <input type="tel" placeholder="Mobile No. (Optional)" value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} className="w-full bg-black/50 border border-white/20 rounded-xl px-4 py-3 text-sm text-[var(--color-rajya-text)] focus:outline-none focus:border-[var(--color-rajya-accent)]" />
+                                <input type="email" placeholder="Email ID (Optional)" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} className="w-full bg-black/50 border border-white/20 rounded-xl px-4 py-3 text-sm text-[var(--color-rajya-text)] focus:outline-none focus:border-[var(--color-rajya-accent)]" />
                             </div>
 
                             <div className="flex items-center justify-between bg-black/30 p-4 rounded-xl border border-white/5">

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { BookOpen, ShieldAlert, CheckCircle2, ArrowLeft, Upload, Plus, GraduationCap } from "lucide-react";
 import { FileUploader } from "@/components/vault/FileUploader";
 import { VideoTutorialPlaceholder } from "@/components/ui/VideoTutorialPlaceholder";
+import { OnboardingStore } from "@/lib/onboardingStore";
 
 interface EducationEntry {
     degree: string;
@@ -39,6 +40,28 @@ export default function EducationPage() {
 
     const handleAddEntry = () => {
         if (!degree || !institution) return;
+
+        if (year) {
+            const certYear = parseInt(year);
+            const currentYear = new Date().getFullYear();
+            if (certYear > currentYear) {
+                alert("Certificate year cannot be in the future.");
+                return;
+            }
+            if (certYear < 1900) {
+                alert("Certificate year seems invalid.");
+                return;
+            }
+            const userDobStr = OnboardingStore.get().dob;
+            if (userDobStr) {
+                const birthYear = new Date(userDobStr).getFullYear();
+                if (certYear <= birthYear) {
+                    alert("Certificate year must be after your birth year.");
+                    return;
+                }
+            }
+        }
+
         const entry: EducationEntry = { degree, institution, year, specialization, hasLoan, certificateId: uploadedCerts[0] };
         setEntries([...entries, entry]);
         // Reset form
