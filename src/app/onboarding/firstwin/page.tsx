@@ -81,19 +81,23 @@ export default function FirstWin() {
                     initial={{ opacity: 0, y: 16 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 1.2 }}
-                    className="mt-6 space-y-3"
+                    className="mt-6 flex-1 flex flex-col justify-center"
                 >
-                    <p className="text-sm text-white/60 text-center">
-                        What do you want Sva-Rajya to protect first?
+                    <p className="text-sm text-white/60 text-center mb-4">
+                        What is your #1 priority right now?
                     </p>
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-2 gap-3 pb-8">
                         {PRIORITIES.map(p => (
                             <button
                                 key={p.id}
-                                onClick={() => setPriority(p.id)}
-                                className={`p-3 rounded-xl border text-left transition-all ${priority === p.id
+                                onClick={() => {
+                                    setPriority(p.id);
+                                    OnboardingStore.set({ priority: p.id });
+                                    setTimeout(() => router.push("/dashboard"), 300);
+                                }}
+                                className={`p-3 rounded-xl border text-left transition-all hover:-translate-y-1 ${priority === p.id
                                     ? "bg-amber-400/15 border-amber-400"
-                                    : "bg-white/5 border-white/10 hover:border-white/25"
+                                    : "bg-white/5 border-white/10 hover:border-amber-400/30"
                                     }`}
                             >
                                 <span className="text-xl">{p.icon}</span>
@@ -108,31 +112,10 @@ export default function FirstWin() {
 
                 {/* Welcome hint */}
                 {data.fullName && (
-                    <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.5 }} className="text-center text-white/35 text-xs mt-4">
-                        Next, you can explore the Rajya Map in read-only mode, {data.fullName.split(" ")[0]}.
+                    <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.5 }} className="text-center text-white/35 text-xs pb-6">
+                        Welcome to Sva-Rajya, {data.fullName.split(" ")[0]}. Tap a priority above to enter your Kingdom.
                     </motion.p>
                 )}
-
-                {/* CTAs */}
-                <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 1.6 }}
-                    className="mt-auto pt-6 pb-4 space-y-3"
-                >
-                    <button
-                        onClick={handleFinish}
-                        className="w-full flex items-center justify-center gap-2 bg-amber-400 text-black font-semibold py-4 rounded-xl text-sm hover:bg-amber-300 transition-colors"
-                    >
-                        Enter the Rajya Map <ChevronRight className="w-4 h-4" />
-                    </button>
-                    <button
-                        onClick={() => { if (priority) OnboardingStore.set({ priority }); router.push("/dashboard"); }}
-                        className="w-full text-white/30 text-sm py-2 hover:text-white/55 transition-colors"
-                    >
-                        I&apos;ll add more later
-                    </button>
-                </motion.div>
             </div>
         </div>
     );

@@ -77,14 +77,6 @@ export function BottomNav() {
                                     </button>
                                 );
                             })}
-                            {/* Theme toggle inside More menu */}
-                            <button
-                                onClick={() => { handleToggleTheme(); setShowMore(false); }}
-                                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-white/50 hover:bg-white/5 transition-colors"
-                            >
-                                {theme === "dark" ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-                                <span className="text-sm">{theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}</span>
-                            </button>
                         </div>
                     </div>
                 </div>

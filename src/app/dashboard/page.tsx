@@ -122,13 +122,6 @@ export default function Dashboard() {
                         <h1 className="font-display text-3xl text-[var(--color-rajya-text)]">Rajya Map</h1>
                         <p className="text-[var(--color-rajya-muted)] text-sm uppercase tracking-widest">Oversee your Kingdom</p>
                     </div>
-                    <button
-                        onClick={handleToggleTheme}
-                        className="w-10 h-10 rounded-xl bg-[var(--color-rajya-card)] border border-[var(--color-rajya-accent)]/30 flex items-center justify-center text-[var(--color-rajya-accent)] hover:bg-[var(--color-rajya-accent)]/10 transition-colors"
-                        title={theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
-                    >
-                        {theme === "dark" ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-                    </button>
                 </div>
             </header>
 

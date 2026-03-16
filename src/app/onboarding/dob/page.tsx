@@ -98,6 +98,9 @@ export default function DOBStep() {
                                 max={new Date().toISOString().split("T")[0]}
                                 className="w-full bg-white/6 border border-white/15 rounded-xl px-4 py-4 text-white focus:outline-none focus:border-amber-400/60 transition-colors"
                             />
+                            <p className="text-[10px] text-white/30 italic">
+                                Note: On iPhone/Safari, tap the Month & Year at the top of the calendar to scroll rapidly to your birth year.
+                            </p>
                             {error && <p className="text-red-400 text-xs">{error}</p>}
                         </div>
 

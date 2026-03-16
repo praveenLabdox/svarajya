@@ -179,7 +179,7 @@ export default function ContactStep() {
 
                 {otpState === "none" && (
                     <div className="pb-4">
-                        <button onClick={() => router.push("/onboarding/firstwin")} className="w-full text-white/30 text-sm py-3 hover:text-white/55 transition-colors">
+                        <button onClick={() => router.push("/onboarding/firstwin")} className="w-full text-amber-400/60 text-[10px] font-semibold uppercase tracking-wider py-3 hover:text-amber-400 transition-colors">
                             Skip verification
                         </button>
                     </div>
