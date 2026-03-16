@@ -112,6 +112,12 @@ export default function AuthGateway() {
                                 <p className="text-white/45 text-sm mt-2 tracking-wide">
                                     Your financial command centre.
                                 </p>
+                                <p className="text-white/70 text-sm mt-4 font-medium px-4">
+                                    Organise your entire financial life in one place.
+                                </p>
+                                <p className="text-white/40 text-[10px] mt-2 tracking-widest uppercase">
+                                    Documents • Income • Banks • Expenses • Insurance • Legacy
+                                </p>
                             </div>
                             <div className="w-full space-y-3 pt-6">
                                 <button
@@ -126,6 +132,13 @@ export default function AuthGateway() {
                                 >
                                     Enter Existing Rajya
                                 </button>
+                                
+                                <div className="pt-6 grid grid-cols-2 gap-y-3 gap-x-2 w-full text-white/30 text-xs text-center border-t border-white/5 mt-4">
+                                    <span>✓ No SMS reading</span>
+                                    <span>✓ No bank scraping</span>
+                                    <span>✓ No ads</span>
+                                    <span>✓ Local-first encryption</span>
+                                </div>
                             </div>
                         </motion.div>
                     ) : (
@@ -146,7 +159,7 @@ export default function AuthGateway() {
                             </h2>
                             <p className="text-sm text-white/40 mb-8 text-center px-4">
                                 {mode === "signup" 
-                                    ? "Secure your identity to access the kingdom." 
+                                    ? "Secure your identity to access the Rajya." 
                                     : mode === "forgot_password" 
                                         ? "Enter your email to receive a password reset link." 
                                         : "Enter your credentials to regain command."}
@@ -213,7 +226,7 @@ export default function AuthGateway() {
                                     disabled={loading}
                                     className="w-full bg-amber-400 text-black font-semibold py-4 rounded-xl text-sm flex items-center justify-center transition-colors disabled:opacity-70 disabled:cursor-not-allowed mt-2"
                                 >
-                                    {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (mode === "signup" ? "Create Kingdom" : mode === "forgot_password" ? "Send Reset Link" : "Unlock Gates")}
+                                    {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (mode === "signup" ? "Create Rajya" : mode === "forgot_password" ? "Send Reset Link" : "Unlock Gates")}
                                 </button>
                             </form>
 
@@ -246,7 +259,7 @@ export default function AuthGateway() {
                                 }}
                                 className="mt-8 text-xs text-amber-400/60 hover:text-amber-400 transition-colors"
                             >
-                                {mode === "signup" ? "Already have a Kingdom? Login instead" : "Need to establish your Rajya? Sign up"}
+                                {mode === "signup" ? "Already have a Rajya? Login instead" : "Need to establish your Rajya? Sign up"}
                             </button>
                         </motion.div>
                     )}

@@ -2,22 +2,27 @@
 
 import { useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { Home, Fingerprint, Key, Bell, Sun, Moon, FolderLock, User, MoreHorizontal } from "lucide-react";
+import { Home, Fingerprint, Key, Bell, Sun, Moon, FolderLock, User, MoreHorizontal, LayoutGrid, Settings, ShieldAlert, Cloud, HelpCircle, LogOut, Lock } from "lucide-react";
 import { NotificationStore } from "@/lib/notificationStore";
 import { ThemeStore, ThemeMode } from "@/lib/themeStore";
 
 // Primary tabs always visible
 const PRIMARY_TABS = [
     { id: "dashboard", label: "Home", icon: Home, route: "/dashboard" },
-    { id: "identity", label: "Pehchaan", icon: Fingerprint, route: "/identity" },
-    { id: "credentials", label: "Kunji", icon: Key, route: "/credentials" },
+    { id: "mandals", label: "Mandals", icon: LayoutGrid, route: "/dashboard" },
+    { id: "alerts", label: "Alerts", icon: Bell, route: "/notifications" },
     { id: "vault", label: "Nidhi", icon: FolderLock, route: "/vault" },
 ];
 
 // Secondary tabs in "More" menu
 const SECONDARY_TABS = [
-    { id: "foundation", label: "Profile", icon: User, route: "/foundation" },
-    { id: "notifications", label: "Alerts", icon: Bell, route: "/notifications" },
+    { id: "profile", label: "Profile", icon: User, route: "/foundation" },
+    { id: "alerts-sec", label: "Alerts", icon: Bell, route: "/notifications" },
+    { id: "emergency", label: "Emergency Access", icon: ShieldAlert, route: "/credentials/access" },
+    { id: "backup", label: "Backup / Sync", icon: Cloud, route: "/vault" },
+    { id: "privacy", label: "Privacy", icon: Lock, route: "/dashboard" },
+    { id: "settings", label: "Settings", icon: Settings, route: "/dashboard" },
+    { id: "support", label: "Help & Support", icon: HelpCircle, route: "/dashboard" },
 ];
 
 // Pages where the bottom nav should NOT appear (onboarding, splash, etc.)
@@ -77,6 +82,26 @@ export function BottomNav() {
                                     </button>
                                 );
                             })}
+                            
+                            {/* Actions in More Menu */}
+                            <div className="pt-2 border-t border-white/10 space-y-1">
+                                <button
+                                    onClick={() => { handleToggleTheme(); setShowMore(false); }}
+                                    className="w-full flex items-center justify-between px-4 py-3 rounded-xl transition-colors text-white/50 hover:bg-white/5"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+                                        <span className="text-sm">Toggle Theme</span>
+                                    </div>
+                                </button>
+                                <button
+                                    onClick={() => { router.replace('/start'); setShowMore(false); }}
+                                    className="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-colors text-red-500 hover:bg-red-500/10"
+                                >
+                                    <LogOut className="w-5 h-5" />
+                                    <span className="text-sm">Logout</span>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>

@@ -69,8 +69,9 @@ export default function OccupationStep() {
                     <div className="space-y-5">
                         <div>
                             <h1 className="text-xl font-semibold text-white mb-1">
-                                Where does the treasury usually get filled from?
+                                Where does your treasury usually get filled from?
                             </h1>
+                            <p className="text-xs text-white/40 mt-1">Primary income source.</p>
                         </div>
 
                         <div className="flex flex-wrap gap-2">

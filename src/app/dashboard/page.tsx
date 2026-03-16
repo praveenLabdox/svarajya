@@ -10,6 +10,8 @@ import {
 import { IdentityStore } from "@/lib/identityStore";
 import { CredentialStore } from "@/lib/credentialStore";
 import { IncomeStore, formatRupee } from "@/lib/incomeStore";
+import { ExpenseStore } from "@/lib/expenseStore";
+import { BankStore } from "@/lib/bankStore";
 import { OnboardingStore } from "@/lib/onboardingStore";
 import { ThemeStore, ThemeMode } from "@/lib/themeStore";
 import { VideoTutorialPlaceholder } from "@/components/ui/VideoTutorialPlaceholder";
@@ -55,14 +57,14 @@ export default function Dashboard() {
 
     const KINGDOM_ZONES = [
         { id: 'foundation', title: 'Sthapana (Foundation)', route: '/foundation', icon: <BookOpen className="w-5 h-5" />, status: sthapanaStatus, completion: sthapanaCompletion, desc: 'Profile, family & education' },
-        { id: 'identity', title: 'Pehchaan (Identity)', route: '/identity', icon: <Fingerprint className="w-5 h-5" />, status: identityStatus, completion: identityCompletion, desc: 'Your identity documents' },
-        { id: 'credentials', title: 'Kunji (Credentials)', route: '/credentials', icon: <Key className="w-5 h-5" />, status: credStatus, completion: credCompletion, desc: 'Login portals & access' },
-        { id: 'protection', title: 'Raksha (Protection)', route: '/raksha', icon: <Shield className="w-5 h-5" />, status: 'warning', completion: 40, desc: 'Insurance & risk cover' },
-        { id: 'growth', title: 'Kosh (Treasury)', route: '/kosh', icon: <Coins className="w-5 h-5" />, status: koshStatus, completion: koshCompletion, desc: koshDesc },
-        { id: 'bank', title: 'Pravah (Liquidity)', route: '/bank', icon: <Droplets className="w-5 h-5" />, status: 'secure', completion: 100, desc: 'Bank accounts & cashflow' },
-        { id: 'control', title: 'Rin (Control)', route: '/rin', icon: <Activity className="w-5 h-5" />, status: 'critical', completion: 10, desc: 'Debt & loan management' },
-        { id: 'vyaya', title: 'Vyaya (Expenses)', route: '/vyaya', icon: <Coins className="w-5 h-5" />, status: 'warning', completion: 40, desc: 'Track and control leakage' },
-        { id: 'legacy', title: 'Mitra (Legacy)', route: '/mitra', icon: <Users className="w-5 h-5" />, status: 'warning', completion: 30, desc: 'Trusted nominees & legacy' },
+        { id: 'identity', title: 'Pehchaan (Identity Records)', route: '/identity', icon: <Fingerprint className="w-5 h-5" />, status: identityStatus, completion: identityCompletion, desc: 'Your identity documents' },
+        { id: 'credentials', title: 'Kunji (Credentials & Access)', route: '/credentials', icon: <Key className="w-5 h-5" />, status: credStatus, completion: credCompletion, desc: 'Login portals & access' },
+        { id: 'protection', title: 'Raksha (Insurance & Protection)', route: '/raksha', icon: <Shield className="w-5 h-5" />, status: 'warning', completion: 40, desc: 'Insurance & risk cover' },
+        { id: 'growth', title: 'Kosh (Income & Treasury)', route: '/kosh', icon: <Coins className="w-5 h-5" />, status: koshStatus, completion: koshCompletion, desc: koshDesc },
+        { id: 'bank', title: 'Pravah (Bank Accounts & Cashflow)', route: '/bank', icon: <Droplets className="w-5 h-5" />, status: 'secure', completion: 100, desc: 'Bank accounts & cashflow' },
+        { id: 'control', title: 'Rin (Loans & Liabilities)', route: '/rin', icon: <Activity className="w-5 h-5" />, status: 'critical', completion: 10, desc: 'Debt & loan management' },
+        { id: 'vyaya', title: 'Vyaya (Expenses & Leakage)', route: '/vyaya', icon: <Coins className="w-5 h-5" />, status: 'warning', completion: 40, desc: 'Track and control leakage' },
+        { id: 'legacy', title: 'Mitra (Nominees & Legacy)', route: '/mitra', icon: <Users className="w-5 h-5" />, status: 'warning', completion: 30, desc: 'Trusted nominees & legacy' },
     ];
 
     // Recalculate global stability score based on actual current completions
@@ -111,11 +113,53 @@ export default function Dashboard() {
         setTheme(next);
     };
 
+    const hasMinimalVyayaData = ExpenseStore.getEntryCount() >= 3;
+
+    // Next Best Action Engine
+    const getNextBestAction = () => {
+        if (identityCoverage.filled < 2) return {
+            title: "Secure your identity.",
+            subtext: "Add your Aadhaar or PAN in the Pehchaan Mandal to establish your core financial anchor.",
+            route: "/identity"
+        };
+        if (BankStore.getAccounts().length === 0) return {
+            title: "Map your liquidity.",
+            subtext: "Add your primary bank account in the Pravah Mandal to calculate your emergency reserves.",
+            route: "/bank"
+        };
+        if (IncomeStore.getRecords().length === 0) return {
+            title: "Define your treasury.",
+            subtext: "Add your primary income source to track your Kosh stability and surplus capacity.",
+            route: "/kosh"
+        };
+        if (!hasMinimalVyayaData) return {
+            title: "Establish expense baselines.",
+            subtext: "Log recent expenses in the Vyaya Mandal so the system can calculate your financial leakage.",
+            route: "/vyaya"
+        };
+        // Fake logic until stores are built
+        const rakshaCompletion = KINGDOM_ZONES.find(z => z.id === 'protection')?.completion || 0;
+        if (rakshaCompletion < 50) return {
+            title: "Shield your kingdom.",
+            subtext: "Complete your health or life insurance coverage records to protect against sudden financial shocks.",
+            route: "/raksha"
+        };
+        const legacyCompletion = KINGDOM_ZONES.find(z => z.id === 'legacy')?.completion || 0;
+        if (legacyCompletion < 50) return {
+            title: "Secure your succession.",
+            subtext: "Assign nominees and log your Will in the Mitra Mandal. Unclaimed assets are a Rajya's greatest risk.",
+            route: "/mitra"
+        };
+        return null;
+    };
+
+    const nextAction = getNextBestAction();
+
     return (
         <div className="flex flex-col min-h-screen p-6 pb-24 relative">
             <div className="absolute top-0 left-0 w-full h-64 bg-gradient-to-b from-[var(--color-rajya-accent)]/10 to-transparent pointer-events-none" />
 
-            {/* Header with theme toggle */}
+            {/* Header */}
             <header className="mb-6 relative z-10 pt-4">
                 <div className="flex items-center justify-between mb-2">
                     <div>
@@ -130,9 +174,26 @@ export default function Dashboard() {
                 <Info className="w-5 h-5 text-[var(--color-rajya-accent)] shrink-0 mt-0.5" />
                 <div>
                     <p className="text-sm font-medium text-[var(--color-rajya-text)]">Your Financial Kingdom</p>
-                    <p className="text-xs text-[var(--color-rajya-muted)] leading-relaxed mt-1">Each zone represents a pillar of your financial life. Tap any zone to explore, add data, and strengthen your kingdom.</p>
+                    <p className="text-xs text-[var(--color-rajya-muted)] leading-relaxed mt-1">Mandals are the core pillars of your financial kingdom. Each Mandal manages one specific area of your financial life to ensure total governance and security.</p>
                 </div>
             </div>
+
+            {/* Next Best Action Card */}
+            {nextAction && (
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.98 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="bg-amber-400/10 border border-amber-400/30 rounded-xl p-4 mb-6 relative z-10 shadow-[0_0_15px_rgba(251,191,36,0.05)] cursor-pointer hover:bg-amber-400/15 transition-colors"
+                    onClick={() => router.push(nextAction.route)}
+                >
+                    <div className="flex items-center gap-2 mb-2">
+                        <Activity className="w-4 h-4 text-amber-500" />
+                        <h3 className="text-amber-500 font-bold text-[10px] uppercase tracking-widest">Next Recommended Step</h3>
+                    </div>
+                    <p className="font-semibold text-[var(--color-rajya-text)] text-sm">{nextAction.title}</p>
+                    <p className="text-xs text-[var(--color-rajya-muted)] mt-1">{nextAction.subtext}</p>
+                </motion.div>
+            )}
 
             {/* YouTube Tutorial */}
             <div className="mb-6 relative z-10">
@@ -148,10 +209,12 @@ export default function Dashboard() {
             >
                 <div className="absolute right-0 top-0 w-32 h-32 bg-[var(--color-rajya-accent)]/10 blur-3xl rounded-full" />
 
-                <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-[var(--color-rajya-text)] font-medium">Kingdom Stability</h2>
+                <div className="flex items-center justify-between mb-2">
+                    <h2 className="text-[var(--color-rajya-text)] font-semibold tracking-wide">RAJYA HEALTH SCORE</h2>
                     <span className="text-3xl font-display text-[var(--color-rajya-accent)]">{stabilityScore}%</span>
                 </div>
+                
+                <p className="text-[10px] text-[var(--color-rajya-muted)] mb-4">This score represents overall financial health across Mandals.</p>
 
                 <div className="h-2 w-full bg-[var(--color-rajya-muted)]/20 rounded-full overflow-hidden">
                     <motion.div
@@ -212,15 +275,17 @@ export default function Dashboard() {
             </div>
 
             {/* Leakage Audit Quick Trigger */}
-            <motion.button
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.8 }}
-                onClick={() => router.push('/leakage')}
-                className="mt-6 w-full bg-[var(--color-rajya-card)] border-2 border-[var(--color-rajya-accent)]/50 text-[var(--color-rajya-accent)] p-4 rounded-xl flex items-center justify-center gap-2 uppercase tracking-widest text-xs font-bold hover:bg-[var(--color-rajya-accent)]/10 transition-colors"
-            >
-                <Activity className="w-4 h-4" /> Run Leakage Audit
-            </motion.button>
+            {hasMinimalVyayaData && (
+                <motion.button
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.8 }}
+                    onClick={() => router.push('/leakage')}
+                    className="mt-6 w-full bg-[var(--color-rajya-card)] border-2 border-[var(--color-rajya-accent)]/50 text-[var(--color-rajya-accent)] p-4 rounded-xl flex items-center justify-center gap-2 uppercase tracking-widest text-xs font-bold hover:bg-[var(--color-rajya-accent)]/10 transition-colors"
+                >
+                    <Activity className="w-4 h-4" /> Run Leakage Audit
+                </motion.button>
+            )}
         </div>
     );
 }

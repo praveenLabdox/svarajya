@@ -85,8 +85,8 @@ export default function DOBStep() {
 
                     <div className="space-y-6">
                         <div>
-                            <h1 className="text-xl font-semibold text-white mb-1">When was the foundation stone laid?</h1>
-                            <p className="text-xs text-white/40">This helps us give the right reminders and planning checklists.</p>
+                            <h1 className="text-xl font-semibold text-white mb-1">When was the foundation of this Rajya laid?</h1>
+                            <p className="text-xs text-white/40">Your date of birth helps us plan financial milestones and reminders.</p>
                         </div>
 
                         <div className="space-y-2">

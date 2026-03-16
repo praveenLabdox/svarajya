@@ -50,7 +50,7 @@ export default function FirstWin() {
                         className="text-center space-y-1"
                     >
                         <p className="text-xs text-amber-400/70 uppercase tracking-widest">Foundation Badge</p>
-                        <h1 className="text-2xl font-semibold text-white">Rajya Foundation Complete ✅</h1>
+                        <h1 className="text-2xl font-semibold text-white">Rajya Foundation Complete</h1>
                     </motion.div>
 
                     {/* Strength bar */}
@@ -71,7 +71,7 @@ export default function FirstWin() {
                         </div>
                         <p className="text-amber-400 font-bold text-lg">100%</p>
                         <p className="text-white/40 text-xs mt-1">
-                            You just unlocked your first financial advantage: <span className="text-white/60">clarity.</span>
+                            You have established the base of your financial kingdom.
                         </p>
                     </motion.div>
                 </div>
@@ -84,7 +84,7 @@ export default function FirstWin() {
                     className="mt-6 flex-1 flex flex-col justify-center"
                 >
                     <p className="text-sm text-white/60 text-center mb-4">
-                        What is your #1 priority right now?
+                        Next: choose your first priority.
                     </p>
                     <div className="grid grid-cols-2 gap-3 pb-8">
                         {PRIORITIES.map(p => (
@@ -113,7 +113,7 @@ export default function FirstWin() {
                 {/* Welcome hint */}
                 {data.fullName && (
                     <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.5 }} className="text-center text-white/35 text-xs pb-6">
-                        Welcome to Sva-Rajya, {data.fullName.split(" ")[0]}. Tap a priority above to enter your Kingdom.
+                        Welcome to Sva-Rajya, {data.fullName.split(" ")[0]}. Tap a priority above to enter your Rajya.
                     </motion.p>
                 )}
             </div>

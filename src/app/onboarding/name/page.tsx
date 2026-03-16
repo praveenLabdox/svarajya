@@ -90,10 +90,10 @@ export default function NameStep() {
                     <div className="space-y-6">
                         <div>
                             <h1 className="text-xl font-semibold text-white mb-1">
-                                What should we call the ruler of this Rajya?
+                                Who governs this Rajya?
                             </h1>
                             <p className="text-xs text-white/40">
-                                Use your legal name — it helps later for documents and nominees.
+                                Enter your legal name. We use it later for documents, nominees, and legacy records.
                             </p>
                         </div>
 

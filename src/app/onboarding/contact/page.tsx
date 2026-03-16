@@ -87,7 +87,8 @@ export default function ContactStep() {
 
                     <div className="space-y-5">
                         <div>
-                            <h1 className="text-xl font-semibold text-white mb-1">Where should your messenger reach you?</h1>
+                            <h1 className="text-xl font-semibold text-white mb-1">Secure Messenger Contact</h1>
+                            <p className="text-xs text-white/40">We use this only for important alerts and financial reminders.</p>
                         </div>
 
                         {/* Mobile */}

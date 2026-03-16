@@ -63,8 +63,8 @@ export default function StatusStep() {
 
                     <div className="space-y-6">
                         <div>
-                            <h1 className="text-xl font-semibold text-white mb-1">Choose your Council style.</h1>
-                            <p className="text-xs text-white/40">You can always skip — this is your Rajya.</p>
+                            <h1 className="text-xl font-semibold text-white mb-1">Household Structure</h1>
+                            <p className="text-xs text-white/40">This helps us understand dependents and future legacy planning.</p>
                         </div>
                         <div className="grid grid-cols-2 gap-3">
                             {OPTIONS.map(opt => (
