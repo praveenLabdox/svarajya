@@ -110,7 +110,7 @@ export default function AuthGateway() {
                                     Sva-Rajya
                                 </h1>
                                 <p className="text-white/45 text-sm mt-2 tracking-wide">
-                                    Your financial command centre.
+                                    Govern your sovereign financial realm.
                                 </p>
                                 <p className="text-white/70 text-sm mt-4 font-medium px-4">
                                     Organise your entire financial life in one place.
@@ -132,13 +132,6 @@ export default function AuthGateway() {
                                 >
                                     Enter Existing Rajya
                                 </button>
-                                
-                                <div className="pt-6 grid grid-cols-2 gap-y-3 gap-x-2 w-full text-white/30 text-xs text-center border-t border-white/5 mt-4">
-                                    <span>✓ No SMS reading</span>
-                                    <span>✓ No bank scraping</span>
-                                    <span>✓ No ads</span>
-                                    <span>✓ Local-first encryption</span>
-                                </div>
                             </div>
                         </motion.div>
                     ) : (
