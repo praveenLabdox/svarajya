@@ -169,7 +169,7 @@ export default function DocDetail() {
                         <ArrowLeft className="w-4 h-4 text-white/60" />
                     </button>
                     <div className="flex-1">
-                        <h1 className="text-lg font-semibold text-white">{doc.docType.toUpperCase()} Details</h1>
+                        <h1 className="text-lg font-semibold text-white truncate">{doc.customDocName || doc.docType.toUpperCase()} Details</h1>
                         <p className="text-xs text-white/35 mt-0.5">{IdentityStore.maskDocNumber(doc.docNumber, doc.docType)}</p>
                     </div>
                     <SealStrengthRing percentage={strength} size={48} label="Seal" />

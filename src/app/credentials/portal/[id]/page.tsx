@@ -119,7 +119,9 @@ export default function PortalDetailPage() {
                         </button>
                         <div>
                             <p className="text-[10px] text-amber-400/60 uppercase tracking-wider">{catMeta?.emoji} {catMeta?.label}</p>
-                            <h1 className="text-lg font-semibold text-white">{portal.platformName}</h1>
+                            <h1 className="text-lg font-semibold text-white truncate">
+                                {portal.customServiceName ? `${portal.platformName} — ${portal.customServiceName}` : portal.platformName}
+                            </h1>
                         </div>
                     </div>
                     <div className="flex items-center gap-2">
@@ -173,6 +175,53 @@ export default function PortalDetailPage() {
                             </div>
                         </div>
                     </div>
+
+                    {/* Service Details — shown for Other / Subscription / Utility */}
+                    {(portal.category === "other" || portal.category === "subscription" || portal.category === "utility") && (
+                        portal.customServiceName || portal.billingCycle || portal.rechargeDate || portal.renewalDate || portal.paymentAssignee || portal.linkedAutoDebitBank
+                    ) && (
+                        <div className="bg-white/5 border border-white/10 rounded-xl p-4 space-y-3">
+                            <p className="text-[10px] text-white/30 uppercase tracking-wider">Service Details</p>
+                            <div className="space-y-2">
+                                {portal.customServiceName && (
+                                    <div className="flex justify-between">
+                                        <span className="text-xs text-white/40">Service Name</span>
+                                        <span className="text-xs text-white">{portal.customServiceName}</span>
+                                    </div>
+                                )}
+                                {portal.billingCycle && (
+                                    <div className="flex justify-between">
+                                        <span className="text-xs text-white/40">Billing Cycle</span>
+                                        <span className="text-xs text-sky-400 capitalize">{portal.billingCycle.replace("_", " ")}</span>
+                                    </div>
+                                )}
+                                {portal.rechargeDate && (
+                                    <div className="flex justify-between">
+                                        <span className="text-xs text-white/40">Next Recharge / Due</span>
+                                        <span className="text-xs text-orange-400">{portal.rechargeDate}</span>
+                                    </div>
+                                )}
+                                {portal.renewalDate && (
+                                    <div className="flex justify-between">
+                                        <span className="text-xs text-white/40">Next Renewal</span>
+                                        <span className="text-xs text-amber-400">{portal.renewalDate}</span>
+                                    </div>
+                                )}
+                                {portal.paymentAssignee && (
+                                    <div className="flex justify-between">
+                                        <span className="text-xs text-white/40">Payment Assignee</span>
+                                        <span className="text-xs text-violet-400">{portal.paymentAssignee}</span>
+                                    </div>
+                                )}
+                                {portal.linkedAutoDebitBank && (
+                                    <div className="flex justify-between">
+                                        <span className="text-xs text-white/40">Auto-Debit Bank</span>
+                                        <span className="text-xs text-white/70">{portal.linkedAutoDebitBank}</span>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
 
                     {/* Password Strategy */}
                     <div className="bg-white/5 border border-white/10 rounded-xl p-4 space-y-3">

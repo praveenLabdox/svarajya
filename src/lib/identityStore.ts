@@ -19,6 +19,7 @@ export interface IdentityDoc {
     docNumber: string;           // raw
     normalizedDocNumber: string; // uppercase, stripped
     nameOnDoc: string;
+    customDocName?: string;      // Used when docType is "other"
     // Stage 2 (deep mode) fields — all optional
     dobOnDoc?: string;
     expiryDate?: string;
@@ -101,20 +102,22 @@ function genId(): string {
 
 export const IdentityStore = {
     // ——— Docs ———
-    addDoc(partial: Omit<IdentityDoc, "id" | "normalizedDocNumber" | "createdAt" | "updatedAt" | "storageMode" | "verificationStatus"> & { storageMode?: string; verificationStatus?: string }): IdentityDoc {
-        const now = Date.now();
+    addDoc(partial: Omit<IdentityDoc, "id" | "normalizedDocNumber" | "createdAt" | "updatedAt" | "verificationStatus" | "storageMode">): IdentityDoc {
+        const norm = normalizeDocNumber(partial.docNumber);
+        
+        // Ensure no duplicate using doc type AND number
+        const existing = _docs.find(d => d.docType === partial.docType && d.normalizedDocNumber === norm);
+        if (existing) throw new Error("DUPLICATE");
+
         const doc: IdentityDoc = {
             id: genId(),
             ...partial,
-            normalizedDocNumber: normalizeDocNumber(partial.docNumber),
-            storageMode: (partial.storageMode as IdentityDoc["storageMode"]) || _storageMode,
-            verificationStatus: (partial.verificationStatus as IdentityDoc["verificationStatus"]) || "not_verified",
-            createdAt: now,
-            updatedAt: now,
+            normalizedDocNumber: norm,
+            storageMode: "local",
+            verificationStatus: "self",
+            createdAt: Date.now(),
+            updatedAt: Date.now(),
         };
-        // Duplicate check
-        const dup = _docs.find(d => d.normalizedDocNumber === doc.normalizedDocNumber && d.docType === doc.docType);
-        if (dup) throw new Error("DUPLICATE");
         _docs.push(doc);
 
         // Sync to API

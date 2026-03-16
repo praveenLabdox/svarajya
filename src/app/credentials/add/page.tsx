@@ -62,6 +62,11 @@ export default function AddPortalPage() {
     // Subscription-specific
     const [renewalDate, setRenewalDate] = useState("");
     const [linkedAutoDebitBank, setLinkedAutoDebitBank] = useState("");
+    // Other-specific
+    const [customServiceName, setCustomServiceName] = useState("");
+    const [rechargeDate, setRechargeDate] = useState("");
+    const [billingCycle, setBillingCycle] = useState<"monthly" | "quarterly" | "half_yearly" | "yearly" | "one_time" | "custom" | "">("")
+    const [paymentAssignee, setPaymentAssignee] = useState("");
 
     // UI state
     const [error, setError] = useState("");
@@ -106,6 +111,7 @@ export default function AddPortalPage() {
                 return;
             }
         }
+        if (category === "other" && !customServiceName.trim()) { setError("Custom service name is required for 'Other' category."); return; }
         setError("");
         setStep(2);
     };
@@ -166,6 +172,11 @@ export default function AddPortalPage() {
             nomineeAwareness: category === "insurance" ? nomineeAwareness : undefined,
             renewalDate: renewalDate || undefined,
             linkedAutoDebitBank: linkedAutoDebitBank.trim() || undefined,
+            // Other-specific
+            customServiceName: category === "other" ? customServiceName.trim() || undefined : undefined,
+            rechargeDate: (category === "other" || category === "subscription" || category === "utility") ? rechargeDate || undefined : undefined,
+            billingCycle: (category === "other" || category === "subscription" || category === "utility") ? (billingCycle || undefined) : undefined,
+            paymentAssignee: (category === "other" || category === "subscription" || category === "utility") ? paymentAssignee.trim() || undefined : undefined,
         });
 
         const deps = {
@@ -370,6 +381,18 @@ export default function AddPortalPage() {
                                 className="w-full bg-white/6 border border-white/15 rounded-xl px-3 py-3 text-sm text-white placeholder-white/20 focus:outline-none focus:border-amber-400/60" />
                         </div>
 
+                        {/* Custom Service Name — other-specific, shown in Step 1 */}
+                        {category === "other" && (
+                            <div className="space-y-2">
+                                <label className="text-xs text-white/40">Custom Service Name <span className="text-amber-400">*</span></label>
+                                <input type="text" placeholder="e.g. Airtel Recharge, Society Maintenance, Gym"
+                                    value={customServiceName}
+                                    onChange={e => { setCustomServiceName(e.target.value); setError(""); }}
+                                    className="w-full bg-white/6 border border-amber-400/30 rounded-xl px-3 py-3 text-sm text-white placeholder-white/20 focus:outline-none focus:border-amber-400/60" />
+                                <p className="text-[10px] text-white/25">A unique label to identify this service in your vault.</p>
+                            </div>
+                        )}
+
                         {/* Bank name — bank-specific */}
                         {category === "bank" && (
                             <div className="space-y-2">
@@ -552,6 +575,53 @@ export default function AddPortalPage() {
                                     <input type="date" value={renewalDate}
                                         onChange={e => setRenewalDate(e.target.value)}
                                         className="w-full bg-white/6 border border-white/15 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-amber-400/60" />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-xs text-white/40">Linked Auto-Debit Bank <span className="text-white/20">(optional)</span></label>
+                                    <input type="text" placeholder="e.g. HDFC Salary Account" value={linkedAutoDebitBank}
+                                        onChange={e => setLinkedAutoDebitBank(e.target.value)}
+                                        className="w-full bg-white/6 border border-white/15 rounded-xl px-3 py-3 text-sm text-white placeholder-white/20 focus:outline-none focus:border-amber-400/60" />
+                                </div>
+                            </>
+                        )}
+
+                        {/* ——— OTHER-specific fields ——— */}
+                        {category === "other" && (
+                            <>
+                                <div className="space-y-2">
+                                    <label className="text-xs text-white/40">Recharge / Payment Due Date</label>
+                                    <input type="date" value={rechargeDate}
+                                        onChange={e => setRechargeDate(e.target.value)}
+                                        className="w-full bg-white/6 border border-white/15 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-amber-400/60" />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-xs text-white/40">Renewal Date <span className="text-white/20">(next billing)</span></label>
+                                    <input type="date" value={renewalDate}
+                                        onChange={e => setRenewalDate(e.target.value)}
+                                        className="w-full bg-white/6 border border-white/15 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-amber-400/60" />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-xs text-white/40">Billing Cycle</label>
+                                    <div className="flex flex-wrap gap-2">
+                                        {(["monthly", "quarterly", "half_yearly", "yearly", "one_time", "custom"] as const).map(c => (
+                                            <button key={c} onClick={() => setBillingCycle(c)}
+                                                className={`px-3 py-2 rounded-lg border text-xs transition-all ${billingCycle === c
+                                                    ? "bg-amber-400/15 border-amber-400 text-amber-400"
+                                                    : "bg-white/5 border-white/10 text-white/40"}`}>
+                                                {c === "monthly" ? "Monthly" : c === "quarterly" ? "Quarterly" : c === "half_yearly" ? "Half Yearly" : c === "yearly" ? "Yearly" : c === "one_time" ? "One-Time" : "Custom"}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-xs text-white/40">Payment Assignee <span className="text-white/20">(who pays?)</span></label>
+                                    <select value={paymentAssignee} onChange={e => setPaymentAssignee(e.target.value)}
+                                        className="w-full bg-white/6 border border-white/15 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none">
+                                        <option value="">Self</option>
+                                        {familyMembers.map(f => (
+                                            <option key={f.id} value={f.name}>{f.name} ({f.relationship})</option>
+                                        ))}
+                                    </select>
                                 </div>
                                 <div className="space-y-2">
                                     <label className="text-xs text-white/40">Linked Auto-Debit Bank <span className="text-white/20">(optional)</span></label>

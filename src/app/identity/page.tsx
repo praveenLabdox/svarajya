@@ -96,11 +96,12 @@ export default function IdentityHub() {
 
                 {/* Seal Cabinet */}
                 <div className="grid grid-cols-2 gap-3 flex-1">
-                    {DOC_TYPES.map(type => {
-                        const meta = DOC_META[type];
-                        const typeDocs = IdentityStore.getDocsByType(type);
+                    {/* Render core docs */}
+                    {["aadhaar", "pan", "passport", "dl", "voter"].map(type => {
+                        const meta = DOC_META[type as DocType];
+                        const typeDocs = IdentityStore.getDocsByType(type as DocType);
                         const docCount = typeDocs.length;
-                        const expiry = getExpiryBadge(type);
+                        const expiry = getExpiryBadge(type as DocType);
                         const hasVerified = typeDocs.some(d => d.verificationStatus !== "not_verified");
                         const strength = typeDocs.length > 0 ? calcSealStrength(typeDocs[0], links) : 0;
 
@@ -120,7 +121,7 @@ export default function IdentityHub() {
                                 <p className="text-sm font-medium text-white">{meta.label}</p>
                                 {docCount > 0 ? (
                                     <>
-                                        <p className="text-xs text-white/40 mt-0.5">{IdentityStore.maskDocNumber(typeDocs[0].docNumber, type)}</p>
+                                        <p className="text-xs text-white/40 mt-0.5">{IdentityStore.maskDocNumber(typeDocs[0].docNumber, type as DocType)}</p>
                                         <p className="text-[10px] text-amber-400/70 mt-1">{strength}% Secure</p>
                                     </>
                                 ) : (
@@ -129,6 +130,40 @@ export default function IdentityHub() {
                             </button>
                         );
                     })}
+
+                    {/* Render dynamically added "Other" documents as separate cards */}
+                    {IdentityStore.getDocsByType("other").map(otherDoc => {
+                        const strength = calcSealStrength(otherDoc, links);
+                        const hasVerified = otherDoc.verificationStatus !== "not_verified";
+
+                        return (
+                            <button
+                                key={otherDoc.id}
+                                onClick={() => router.push(`/identity/doc/${otherDoc.id}`)}
+                                className="bg-white/5 border border-white/10 hover:border-amber-400/40 rounded-2xl p-4 text-left transition-all"
+                            >
+                                <div className="flex items-start justify-between mb-3">
+                                    <div className="text-amber-400">{DOC_META["other"].icon}</div>
+                                    <div className="flex gap-1">
+                                        {hasVerified && <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />}
+                                    </div>
+                                </div>
+                                <p className="text-sm font-medium text-white truncate">{otherDoc.customDocName || "Other"}</p>
+                                <p className="text-xs text-white/40 mt-0.5">{IdentityStore.maskDocNumber(otherDoc.docNumber, "other")}</p>
+                                <p className="text-[10px] text-amber-400/70 mt-1">{strength}% Secure</p>
+                            </button>
+                        );
+                    })}
+
+                    {/* Render "Add Other" button if no other docs exist, or as an extra block */}
+                    <button
+                        onClick={() => router.push(`/identity/add?type=other`)}
+                        className="bg-white/5 border border-white/5 border-dashed hover:border-white/20 rounded-2xl p-4 text-center transition-all flex flex-col items-center justify-center opacity-60 hover:opacity-100"
+                    >
+                        <div className="text-white/40 mb-2">{DOC_META["other"].icon}</div>
+                        <p className="text-sm font-medium text-white/70">Add Custom</p>
+                        <p className="text-xs text-white/40 mt-0.5">Document</p>
+                    </button>
                 </div>
 
                 {/* Navigation buttons */}

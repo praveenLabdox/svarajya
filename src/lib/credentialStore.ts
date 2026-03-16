@@ -61,6 +61,11 @@ export interface PortalRecord {
     // Subscription-specific
     renewalDate?: string;              // Next renewal date
     linkedAutoDebitBank?: string;      // Bank account for auto-debit
+    // "Other" category-specific
+    customServiceName?: string;        // e.g. "Airtel Recharge", "Society Maintenance"
+    rechargeDate?: string;             // Next recharge/payment due date
+    billingCycle?: "monthly" | "quarterly" | "half_yearly" | "yearly" | "one_time" | "custom";
+    paymentAssignee?: string;          // Who pays for this? (family member name)
     createdAt: string;
     updatedAt: string;
 }

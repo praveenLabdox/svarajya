@@ -25,6 +25,7 @@ function AddDocumentForm() {
     const preselectedType = searchParams.get("type") as DocType | null;
 
     const [docType, setDocType] = useState<DocType>(preselectedType || "pan");
+    const [customDocName, setCustomDocName] = useState("");
     const [docNumber, setDocNumber] = useState("");
     const [nameOnDoc, setNameOnDoc] = useState("");
     const [revealed, setRevealed] = useState(false);
@@ -43,7 +44,8 @@ function AddDocumentForm() {
         setError("");
 
         if (!docType) { setError("Please select a document type."); return; }
-        if (!docNumber.trim()) { setError("Document type and number are required."); return; }
+        if (docType === "other" && !customDocName.trim()) { setError("Please provide a name for this document."); return; }
+        if (!docNumber.trim()) { setError("Document number is required."); return; }
         if (!nameOnDoc.trim()) { setError("Please enter the name as printed on the document."); return; }
         if (isNameMismatched && !mismatchReason.trim()) { setError("Please provide a reason for the name mismatch."); return; }
 
@@ -63,6 +65,7 @@ function AddDocumentForm() {
         try {
             const doc = IdentityStore.addDoc({
                 docType,
+                customDocName: docType === "other" ? customDocName.trim() : undefined,
                 docNumber: valResult.normalizedValue,
                 nameOnDoc: nameOnDoc.trim(),
                 vaultFileId: vaultFileId || undefined,
@@ -215,6 +218,20 @@ function AddDocumentForm() {
                         </div>
                         <p className="text-[10px] text-white/20">This will be securely masked.</p>
                     </div>
+
+                    {/* Custom Doc Name (Only if Other) */}
+                    {docType === "other" && (
+                        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="space-y-2">
+                            <label className="text-xs text-white/40 uppercase tracking-wider">Document Name</label>
+                            <input
+                                type="text"
+                                value={customDocName}
+                                onChange={e => { setCustomDocName(e.target.value); setError(""); }}
+                                placeholder="e.g. Marriage Certificate"
+                                className="w-full bg-white/6 border border-amber-400/30 rounded-xl px-4 py-3 text-white placeholder-white/25 focus:outline-none focus:border-amber-400/60 transition-colors"
+                            />
+                        </motion.div>
+                    )}
 
                     {/* Name on doc */}
                     <div className="space-y-2">

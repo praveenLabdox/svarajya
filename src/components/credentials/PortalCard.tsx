@@ -37,7 +37,9 @@ export function PortalCard({ portal, healthScore, emergencyReady, nowMs }: Porta
                 <span className="text-lg mt-0.5">{catMeta?.emoji || "📎"}</span>
                 <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between">
-                        <p className="text-sm font-medium text-white truncate">{portal.platformName}</p>
+                        <p className="text-sm font-medium text-white truncate">
+                            {portal.customServiceName ? `${portal.platformName} — ${portal.customServiceName}` : portal.platformName}
+                        </p>
                         {healthScore !== undefined && (
                             <span className={`text-[10px] font-semibold ${healthScore >= 70 ? "text-emerald-400" : healthScore >= 40 ? "text-amber-400" : "text-red-400"}`}>
                                 {healthScore}%
@@ -54,6 +56,15 @@ export function PortalCard({ portal, healthScore, emergencyReady, nowMs }: Porta
                         )}
                         {emergencyReady && (
                             <span className="text-[10px] text-emerald-400/70">✔ Emergency Ready</span>
+                        )}
+                        {portal.billingCycle && (
+                            <span className="text-[10px] text-sky-400/70 bg-sky-400/10 px-2 py-0.5 rounded-full capitalize">{portal.billingCycle.replace("_", " ")}</span>
+                        )}
+                        {portal.rechargeDate && (
+                            <span className="text-[10px] text-orange-400/70 bg-orange-400/10 px-2 py-0.5 rounded-full">Due: {portal.rechargeDate}</span>
+                        )}
+                        {portal.paymentAssignee && (
+                            <span className="text-[10px] text-violet-400/70 bg-violet-400/10 px-2 py-0.5 rounded-full">Paid by: {portal.paymentAssignee}</span>
                         )}
                         <span className="text-[10px] text-white/20">{reviewedText}</span>
                     </div>
