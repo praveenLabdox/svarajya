@@ -26,7 +26,7 @@ const SECONDARY_TABS = [
 ];
 
 // Pages where the bottom nav should NOT appear (onboarding, splash, etc.)
-const HIDDEN_PATHS = ["/", "/start"];
+const HIDDEN_PATHS = ["/", "/start", "/intro"];
 
 export function BottomNav() {
     const router = useRouter();
