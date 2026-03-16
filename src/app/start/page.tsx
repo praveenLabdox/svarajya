@@ -73,8 +73,7 @@ export default function AuthGateway() {
             const { error } = await supabase.auth.signInWithOAuth({
                 provider: "google",
                 options: {
-                    redirectTo: `${window.location.origin}/dashboard`,
-                    scopes: "https://www.googleapis.com/auth/drive.file"
+                    redirectTo: `${window.location.origin}/dashboard`
                 }
             });
             if (error) throw error;
