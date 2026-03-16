@@ -6,7 +6,7 @@ import { Sun, Moon, LogOut } from "lucide-react";
 import { ThemeStore, ThemeMode } from "@/lib/themeStore";
 import { createClient } from "@/lib/supabase/client";
 
-const HIDDEN_PATHS = ["/", "/start"];
+const HIDDEN_PATHS = ["/", "/start", "/intro"];
 
 export function GlobalTopRightMenu() {
     const router = useRouter();
@@ -22,7 +22,7 @@ export function GlobalTopRightMenu() {
         }
     }, [pathname]);
 
-    if (!mounted || HIDDEN_PATHS.includes(pathname) || pathname.startsWith("/onboarding")) {
+    if (!mounted || HIDDEN_PATHS.includes(pathname) || pathname.startsWith("/onboarding") || pathname === "/dashboard") {
         return null;
     }
 
