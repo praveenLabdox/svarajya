@@ -79,9 +79,12 @@ export default function FoundationHub() {
                                 <p className="text-xs text-white/30 mt-0.5">+91 {data.mobile}</p>
                             )}
                         </div>
-                        <span className="text-xs text-amber-400 bg-amber-400/10 border border-amber-400/20 px-2 py-1 rounded-full shrink-0 capitalize">
-                            {data.priority || "Profile set"}
-                        </span>
+                        <button 
+                            onClick={() => router.push("/onboarding/name")}
+                            className="text-xs text-black font-semibold bg-amber-400 px-3 py-1.5 rounded-full shrink-0 uppercase tracking-wide hover:bg-amber-500 transition-colors"
+                        >
+                            Edit
+                        </button>
                     </div>
                     {!photoUploaded && (
                         <p className="text-xs text-white/25 mt-3 text-center">Tap the circle above to add your photo</p>

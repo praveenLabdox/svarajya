@@ -1,0 +1,66 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { useRouter, usePathname } from "next/navigation";
+import { Sun, Moon, LogOut } from "lucide-react";
+import { ThemeStore, ThemeMode } from "@/lib/themeStore";
+import { createClient } from "@/lib/supabase/client";
+
+const HIDDEN_PATHS = ["/", "/start"];
+
+export function GlobalTopRightMenu() {
+    const router = useRouter();
+    const pathname = usePathname();
+    const [theme, setTheme] = useState<ThemeMode>("dark");
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+        if (typeof window !== "undefined") {
+            ThemeStore.init();
+            setTheme(ThemeStore.get());
+        }
+    }, [pathname]);
+
+    if (!mounted || HIDDEN_PATHS.includes(pathname) || pathname.startsWith("/onboarding")) {
+        return null;
+    }
+
+    const handleToggleTheme = () => {
+        const next = ThemeStore.toggle();
+        setTheme(next);
+    };
+
+    const handleLogout = async () => {
+        const supabase = createClient();
+        await supabase.auth.signOut();
+        // Clear local stores on logout to prevent data leaking between users
+        if (typeof window !== "undefined") {
+            // Keep theme, but clear identity/kosh/etc.
+            localStorage.removeItem("svarajya_identity_v1");
+            localStorage.removeItem("svarajya_credentials_v1");
+            localStorage.removeItem("svarajya_treasury_v1");
+            localStorage.removeItem("svarajya_onboarding_v1");
+        }
+        router.push("/start");
+    };
+
+    return (
+        <div className="fixed top-6 right-6 z-50 flex items-center gap-2 pointer-events-auto">
+            <button
+                onClick={handleToggleTheme}
+                className="w-10 h-10 rounded-full bg-slate-900/60 backdrop-blur-md border border-white/10 flex items-center justify-center text-amber-400 hover:bg-white/10 transition-colors shadow-lg"
+                title={theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
+            >
+                {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            </button>
+            <button
+                onClick={handleLogout}
+                className="w-10 h-10 rounded-full bg-slate-900/60 backdrop-blur-md border border-red-500/30 flex items-center justify-center text-red-500 hover:bg-red-500/10 transition-colors shadow-lg"
+                title="Log Out"
+            >
+                <LogOut className="w-4 h-4 ml-0.5" />
+            </button>
+        </div>
+    );
+}

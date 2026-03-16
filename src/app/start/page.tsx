@@ -16,11 +16,12 @@ export default function AuthGateway() {
     const router = useRouter();
     const supabase = createClient();
     
-    const [mode, setMode] = useState<"splash" | "login" | "signup">("splash");
+    const [mode, setMode] = useState<"splash" | "login" | "signup" | "forgot_password">("splash");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
+    const [msg, setMsg] = useState("");
 
     const handleAuth = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -42,6 +43,14 @@ export default function AuthGateway() {
                 });
                 if (signInError) throw signInError;
                 router.push("/onboarding");
+            } else if (mode === "forgot_password") {
+                const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
+                    redirectTo: `${window.location.origin}/dashboard`
+                });
+                if (resetError) throw resetError;
+                setError("");
+                setMsg("Reset link sent to your email.");
+                return;
             } else {
                 const { error: signInError } = await supabase.auth.signInWithPassword({
                     email,
@@ -133,12 +142,14 @@ export default function AuthGateway() {
                             </div>
                             
                             <h2 className="text-2xl font-semibold text-white mb-2">
-                                {mode === "signup" ? "Begin Creation" : "Welcome Back"}
+                                {mode === "signup" ? "Begin Creation" : mode === "forgot_password" ? "Recover Password" : "Welcome Back"}
                             </h2>
                             <p className="text-sm text-white/40 mb-8 text-center px-4">
                                 {mode === "signup" 
                                     ? "Secure your identity to access the kingdom." 
-                                    : "Enter your credentials to regain command."}
+                                    : mode === "forgot_password" 
+                                        ? "Enter your email to receive a password reset link." 
+                                        : "Enter your credentials to regain command."}
                             </p>
 
                             <form onSubmit={handleAuth} className="w-full space-y-4">
@@ -156,24 +167,44 @@ export default function AuthGateway() {
                                             className="w-full bg-white/5 border border-white/10 rounded-xl py-4 pl-12 pr-4 text-white placeholder-white/30 focus:outline-none focus:border-amber-400/50 transition-colors text-sm"
                                         />
                                     </div>
-                                    <div className="relative">
-                                        <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
-                                            <Lock className="w-4 h-4 text-white/30" />
+                                    {mode !== "forgot_password" && (
+                                        <div className="relative">
+                                            <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+                                                <Lock className="w-4 h-4 text-white/30" />
+                                            </div>
+                                            <input
+                                                type="password"
+                                                required
+                                                value={password}
+                                                onChange={(e) => setPassword(e.target.value)}
+                                                placeholder="Passphrase"
+                                                className="w-full bg-white/5 border border-white/10 rounded-xl py-4 pl-12 pr-4 text-white placeholder-white/30 focus:outline-none focus:border-amber-400/50 transition-colors text-sm"
+                                            />
                                         </div>
-                                        <input
-                                            type="password"
-                                            required
-                                            value={password}
-                                            onChange={(e) => setPassword(e.target.value)}
-                                            placeholder="Passphrase"
-                                            className="w-full bg-white/5 border border-white/10 rounded-xl py-4 pl-12 pr-4 text-white placeholder-white/30 focus:outline-none focus:border-amber-400/50 transition-colors text-sm"
-                                        />
-                                    </div>
+                                    )}
                                 </div>
 
                                 {error && (
                                     <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-xs text-center">
                                         {error}
+                                    </div>
+                                )}
+                                
+                                {msg && (
+                                    <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs text-center">
+                                        {msg}
+                                    </div>
+                                )}
+
+                                {mode === "login" && (
+                                    <div className="flex justify-end">
+                                        <button
+                                            type="button"
+                                            onClick={() => { setMode("forgot_password"); setError(""); setMsg(""); }}
+                                            className="text-[10px] text-amber-400/60 hover:text-amber-400 transition-colors uppercase tracking-wider font-semibold"
+                                        >
+                                            Forgot Passphrase?
+                                        </button>
                                     </div>
                                 )}
 
@@ -182,7 +213,7 @@ export default function AuthGateway() {
                                     disabled={loading}
                                     className="w-full bg-amber-400 text-black font-semibold py-4 rounded-xl text-sm flex items-center justify-center transition-colors disabled:opacity-70 disabled:cursor-not-allowed mt-2"
                                 >
-                                    {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (mode === "signup" ? "Create Kingdom" : "Unlock Gates")}
+                                    {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (mode === "signup" ? "Create Kingdom" : mode === "forgot_password" ? "Send Reset Link" : "Unlock Gates")}
                                 </button>
                             </form>
 
@@ -211,6 +242,7 @@ export default function AuthGateway() {
                                 onClick={() => {
                                     setMode(mode === "signup" ? "login" : "signup");
                                     setError("");
+                                    setMsg("");
                                 }}
                                 className="mt-8 text-xs text-amber-400/60 hover:text-amber-400 transition-colors"
                             >
