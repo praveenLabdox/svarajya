@@ -38,6 +38,7 @@ export async function updateSession(request: NextRequest) {
   const isPublicRoute = 
     request.nextUrl.pathname === '/' || 
     request.nextUrl.pathname.startsWith('/start') ||
+    request.nextUrl.pathname.startsWith('/intro') ||
     request.nextUrl.pathname.startsWith('/login')
 
   if (!user && !isPublicRoute) {
@@ -48,7 +49,8 @@ export async function updateSession(request: NextRequest) {
   }
 
   // If user is logged in, but tries to access /start, redirect to dashboard
-  if (user && isPublicRoute && request.nextUrl.pathname !== '/') {
+  // Note: /intro is intentionally allowed through - users should always be able to view the cinematic intro
+  if (user && request.nextUrl.pathname.startsWith('/start')) {
     const url = request.nextUrl.clone()
     url.pathname = '/dashboard'
     return NextResponse.redirect(url)
