@@ -1,9 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { AlertCircle, Bell, X, ChevronRight } from "lucide-react";
 import { NotificationStore, Notification } from "@/lib/notificationStore";
+
+const TOAST_HIDDEN_PATHS = ["/", "/intro", "/start"];
 
 /**
  * Global alert toast that slides in from the top when there
@@ -12,9 +14,13 @@ import { NotificationStore, Notification } from "@/lib/notificationStore";
  */
 export function AlertToast() {
     const router = useRouter();
+    const pathname = usePathname();
     const [alert, setAlert] = useState<Notification | null>(null);
     const [visible, setVisible] = useState(false);
     const [dismissed, setDismissed] = useState<Set<string>>(new Set());
+
+    // Hide completely on intro/splash/onboarding screens
+    const isHiddenPath = TOAST_HIDDEN_PATHS.includes(pathname) || pathname.startsWith("/onboarding");
 
     useEffect(() => {
         // Check for unread critical alerts every 2s
@@ -64,7 +70,7 @@ export function AlertToast() {
         }
     };
 
-    if (!visible || !alert) return null;
+    if (!visible || !alert || isHiddenPath) return null;
 
     const isWarning = alert.type === "warning";
 
