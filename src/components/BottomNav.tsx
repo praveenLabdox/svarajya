@@ -5,6 +5,8 @@ import { useRouter, usePathname } from "next/navigation";
 import { Home, Fingerprint, Key, Bell, Sun, Moon, FolderLock, User, MoreHorizontal, LayoutGrid, Settings, ShieldAlert, Cloud, HelpCircle, LogOut, Lock } from "lucide-react";
 import { NotificationStore } from "@/lib/notificationStore";
 import { ThemeStore, ThemeMode } from "@/lib/themeStore";
+import { createClient } from "@/lib/supabase/client";
+import { OnboardingStore } from "@/lib/onboardingStore";
 
 // Primary tabs always visible
 const PRIMARY_TABS = [
@@ -44,6 +46,22 @@ export function BottomNav() {
     const handleToggleTheme = () => {
         const next = ThemeStore.toggle();
         setTheme(next);
+    };
+
+    const handleLogout = async () => {
+        const supabase = createClient();
+        await supabase.auth.signOut();
+        // Reset in-memory and local stores
+        OnboardingStore.reset();
+        if (typeof window !== "undefined") {
+            localStorage.removeItem("svarajya_identity_v1");
+            localStorage.removeItem("svarajya_credentials_v1");
+            localStorage.removeItem("svarajya_treasury_v1");
+            localStorage.removeItem("svarajya_onboarding_v1");
+            localStorage.removeItem("svarajya_last_login");
+        }
+        setShowMore(false);
+        router.replace("/start");
     };
 
     // Hide on onboarding/splash screens
@@ -95,7 +113,7 @@ export function BottomNav() {
                                     </div>
                                 </button>
                                 <button
-                                    onClick={() => { router.replace('/start'); setShowMore(false); }}
+                                    onClick={handleLogout}
                                     className="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-colors text-red-500 hover:bg-red-500/10"
                                 >
                                     <LogOut className="w-5 h-5" />

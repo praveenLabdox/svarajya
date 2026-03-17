@@ -5,43 +5,59 @@ import { useRouter, usePathname } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { OnboardingStore } from "@/lib/onboardingStore";
 
+const LAST_LOGIN_KEY = "svarajya_last_login";
+
 export function AuthSync() {
     const router = useRouter();
     const pathname = usePathname();
 
     useEffect(() => {
-        // Skip sync on completely public pages
-        if (pathname === "/" || pathname === "/start") return;
+        // Skip on fully public / cinematic pages
+        if (pathname === "/" || pathname === "/start" || pathname === "/intro") return;
+        // Don't interfere while the user is mid-onboarding
+        if (pathname.startsWith("/onboarding")) return;
 
         const syncUserData = async () => {
             const supabase = createClient();
             const { data: { session } } = await supabase.auth.getSession();
-            
-            if (session?.user) {
-                const onboardingData = OnboardingStore.get();
-                
-                // If the user's local store doesn't have a name yet (fresh login or fresh device)
-                if (!onboardingData.fullName || onboardingData.fullName.trim() === "") {
-                    // Check if Google provided a name
-                    const googleName = session.user.user_metadata?.full_name;
-                    if (googleName) {
-                        OnboardingStore.set({
-                            fullName: googleName,
-                            email: session.user.email || ""
-                        });
-                        // Push to onboarding anyway to get occupation/dob
-                        if (!pathname.startsWith("/onboarding")) {
-                            router.push("/onboarding/dob");
-                        }
-                    } else {
-                        // Not Google, or no name provided, force onboarding
-                        if (!pathname.startsWith("/onboarding")) {
-                            router.push("/onboarding/name");
-                        }
-                    }
+
+            if (!session?.user) return; // Middleware guards handle this
+
+            // --- Hydrate from DB first (authoritative source) ---
+            await OnboardingStore.hydrate();
+            const onboardingData = OnboardingStore.get();
+
+            const hasCompletedProfile = !!(
+                onboardingData.fullName &&
+                onboardingData.dob &&
+                onboardingData.occupationType
+            );
+
+            if (hasCompletedProfile) {
+                // Returning user — record login timestamp and let them proceed normally
+                const now = new Date().toISOString();
+                const lastLogin = localStorage.getItem(LAST_LOGIN_KEY);
+                if (!lastLogin) {
+                    // First login on this device but profile exists (e.g. new browser/device)
+                    localStorage.setItem(LAST_LOGIN_KEY, now);
+                    // Show welcome-back firstwin screen
+                    router.replace("/onboarding/firstwin?returning=true");
+                } else {
+                    // Known device — update timestamp silently, don't disturb navigation
+                    localStorage.setItem(LAST_LOGIN_KEY, now);
                 }
             } else {
-                // Not logged in. Middleware handles auth guards, but we can catch edge cases
+                // New user — no completed DB profile found, start onboarding
+                const googleName = session.user.user_metadata?.full_name;
+                if (googleName) {
+                    await OnboardingStore.set({
+                        fullName: googleName,
+                        email: session.user.email || ""
+                    });
+                    router.push("/onboarding/dob");
+                } else {
+                    router.push("/onboarding/name");
+                }
             }
         };
 
