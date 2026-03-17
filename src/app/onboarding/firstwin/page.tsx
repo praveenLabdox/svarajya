@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Award, Crown } from "lucide-react";
@@ -20,20 +20,41 @@ export default function FirstWin() {
     const searchParams = useSearchParams();
     const isReturning = searchParams.get("returning") === "true";
     const [priority, setPriority] = useState("");
-    const data = OnboardingStore.get();
-    const firstName = data.fullName ? data.fullName.split(" ")[0] : "Ruler";
-    const [lastLoginDisplay, setLastLoginDisplay] = useState<string | null>(() => {
+    // Name starts as "Ruler" fallback, then gets replaced with real name from DB
+    const [firstName, setFirstName] = useState("Ruler");
+    const lastLoginDisplay = (() => {
         if (typeof window === "undefined") return null;
         const stored = localStorage.getItem(LAST_LOGIN_KEY);
         if (!stored || !isReturning) return null;
         const d = new Date(stored);
         return d.toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" });
-    });
+    })();
+
+    useEffect(() => {
+        // Fetch name directly from DB — in-memory OnboardingStore is empty on fresh page load
+        fetch("/api/profile")
+            .then(r => (r.ok ? r.json() : null))
+            .then(profile => {
+                if (profile?.fullName) {
+                    setFirstName(profile.fullName.split(" ")[0]);
+                } else {
+                    // Fallback: check in-memory store (works during same session)
+                    const stored = OnboardingStore.get().fullName;
+                    if (stored) setFirstName(stored.split(" ")[0]);
+                }
+            })
+            .catch(() => {
+                const stored = OnboardingStore.get().fullName;
+                if (stored) setFirstName(stored.split(" ")[0]);
+            });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const handleFinish = () => {
         if (priority) OnboardingStore.set({ priority });
         router.push("/dashboard");
     };
+
 
     // --- RETURNING USER VIEW ---
     if (isReturning) {

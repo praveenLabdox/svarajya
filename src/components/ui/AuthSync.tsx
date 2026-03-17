@@ -54,11 +54,13 @@ export function AuthSync() {
                 const lastLogin = localStorage.getItem(LAST_LOGIN_KEY);
                 localStorage.setItem(LAST_LOGIN_KEY, now);
 
-                // If this is a fresh device login (no previous login stored), show welcome-back
-                if (!lastLogin && pathname !== "/dashboard") {
+                // If no previous login on this device → show welcome-back screen
+                // (This fires even on /dashboard since middleware always sends users there after login)
+                if (!lastLogin) {
                     router.replace("/onboarding/firstwin?returning=true");
+                    return;
                 }
-                // Otherwise let them stay where they are (dashboard or any protected page)
+                // Otherwise user has seen welcome before — let them stay on dashboard
 
             } else {
                 // --- No profile — start onboarding ---
