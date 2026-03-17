@@ -123,13 +123,29 @@ export default function NameStep() {
                     </div>
                 </div>
 
-                <div className="pb-4">
+                <div className="pb-4 space-y-3">
                     <button
                         onClick={handleContinue}
                         disabled={placed}
                         className="w-full bg-amber-400 text-black font-semibold py-4 rounded-xl text-sm hover:bg-amber-300 transition-colors disabled:opacity-60"
                     >
                         Place the Nameplate
+                    </button>
+                    <button
+                        onClick={async () => {
+                            const res = await fetch("/api/profile");
+                            if (res.ok) {
+                                const profile = await res.json();
+                                if (profile?.fullName) {
+                                    window.location.href = "/onboarding/firstwin?returning=true";
+                                    return;
+                                }
+                            }
+                            window.location.href = "/dashboard";
+                        }}
+                        className="w-full text-xs text-white/30 hover:text-amber-400/60 transition-colors py-2"
+                    >
+                        I already have a Rajya →
                     </button>
                 </div>
             </div>

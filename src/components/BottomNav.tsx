@@ -59,9 +59,9 @@ export function BottomNav() {
             localStorage.removeItem("svarajya_treasury_v1");
             localStorage.removeItem("svarajya_onboarding_v1");
             localStorage.removeItem("svarajya_last_login");
+            // Hard redirect — forces middleware to re-evaluate auth after signOut
+            window.location.href = "/start";
         }
-        setShowMore(false);
-        router.replace("/start");
     };
 
     // Hide on onboarding/splash screens

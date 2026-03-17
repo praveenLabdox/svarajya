@@ -34,15 +34,15 @@ export function GlobalTopRightMenu() {
     const handleLogout = async () => {
         const supabase = createClient();
         await supabase.auth.signOut();
-        // Clear local stores on logout to prevent data leaking between users
         if (typeof window !== "undefined") {
-            // Keep theme, but clear identity/kosh/etc.
             localStorage.removeItem("svarajya_identity_v1");
             localStorage.removeItem("svarajya_credentials_v1");
             localStorage.removeItem("svarajya_treasury_v1");
             localStorage.removeItem("svarajya_onboarding_v1");
+            localStorage.removeItem("svarajya_last_login");
+            // Hard redirect — forces middleware to re-evaluate auth cookies
+            window.location.href = "/start";
         }
-        router.push("/start");
     };
 
     return (

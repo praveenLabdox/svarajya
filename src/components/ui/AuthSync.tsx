@@ -7,47 +7,62 @@ import { OnboardingStore } from "@/lib/onboardingStore";
 
 const LAST_LOGIN_KEY = "svarajya_last_login";
 
+// Routes where AuthSync should do nothing
+const BYPASS_PATHS = ["/", "/start", "/intro"];
+
 export function AuthSync() {
     const router = useRouter();
     const pathname = usePathname();
 
     useEffect(() => {
-        // Skip on fully public / cinematic pages
-        if (pathname === "/" || pathname === "/start" || pathname === "/intro") return;
-        // Don't interfere while the user is mid-onboarding
+        // Never run on public/cinematic pages
+        if (BYPASS_PATHS.includes(pathname)) return;
+        // Never interfere while user is mid-onboarding
         if (pathname.startsWith("/onboarding")) return;
 
         const syncUserData = async () => {
             const supabase = createClient();
             const { data: { session } } = await supabase.auth.getSession();
 
-            if (!session?.user) return; // Middleware guards handle this
+            if (!session?.user) return; // Middleware protects routes anyway
 
-            // --- Hydrate from DB first (authoritative source) ---
-            await OnboardingStore.hydrate();
-            const onboardingData = OnboardingStore.get();
+            // --- Step 1: Fetch profile directly from DB (authoritative) ---
+            let dbProfile: Record<string, unknown> | null = null;
+            try {
+                const res = await fetch("/api/profile");
+                if (res.ok) {
+                    dbProfile = await res.json();
+                    console.log("[AuthSync] DB profile fetched:", dbProfile);
+                } else {
+                    console.warn("[AuthSync] Profile API returned", res.status);
+                }
+            } catch (err) {
+                console.error("[AuthSync] Failed to fetch profile:", err);
+            }
 
-            const hasCompletedProfile = !!(
-                onboardingData.fullName &&
-                onboardingData.dob &&
-                onboardingData.occupationType
-            );
+            // --- Step 2: Determine if profile is complete enough ---
+            // Only require fullName — the essential anchor. dob & occupation are filled during flow.
+            const hasProfile = dbProfile && typeof dbProfile.fullName === "string" && dbProfile.fullName.trim() !== "";
+            console.log("[AuthSync] hasProfile:", hasProfile, "| pathname:", pathname);
 
-            if (hasCompletedProfile) {
-                // Returning user — record login timestamp and let them proceed normally
+            if (hasProfile) {
+                // Populate in-memory store from DB data
+                await OnboardingStore.hydrate();
+
+                // Track last login
                 const now = new Date().toISOString();
                 const lastLogin = localStorage.getItem(LAST_LOGIN_KEY);
-                if (!lastLogin) {
-                    // First login on this device but profile exists (e.g. new browser/device)
-                    localStorage.setItem(LAST_LOGIN_KEY, now);
-                    // Show welcome-back firstwin screen
+                localStorage.setItem(LAST_LOGIN_KEY, now);
+
+                // If this is a fresh device login (no previous login stored), show welcome-back
+                if (!lastLogin && pathname !== "/dashboard") {
                     router.replace("/onboarding/firstwin?returning=true");
-                } else {
-                    // Known device — update timestamp silently, don't disturb navigation
-                    localStorage.setItem(LAST_LOGIN_KEY, now);
                 }
+                // Otherwise let them stay where they are (dashboard or any protected page)
+
             } else {
-                // New user — no completed DB profile found, start onboarding
+                // --- No profile — start onboarding ---
+                console.log("[AuthSync] No profile found, starting onboarding");
                 const googleName = session.user.user_metadata?.full_name;
                 if (googleName) {
                     await OnboardingStore.set({
@@ -62,7 +77,8 @@ export function AuthSync() {
         };
 
         syncUserData();
-    }, [pathname, router]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [pathname]);
 
     return null;
 }
