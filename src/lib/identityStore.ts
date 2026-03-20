@@ -2,6 +2,7 @@
 // Mirrors OnboardingStore pattern. Will be replaced by Supabase in production.
 
 import { OnboardingStore } from "./onboardingStore";
+import { validateControlledEmail, validateIndianMobile } from "./contactValidation";
 
 export type DocType = "aadhaar" | "pan" | "passport" | "dl" | "voter" | "other";
 
@@ -164,7 +165,16 @@ export const IdentityStore = {
 
     // ——— Contacts ———
     addContact(type: "mobile" | "email", value: string, label?: string): ContactPoint {
-        const cp: ContactPoint = { id: genId(), type, value, label, createdAt: Date.now() };
+        const trimmed = value.trim();
+        const normalizedValue = type === "mobile"
+            ? validateIndianMobile(trimmed)
+            : validateControlledEmail(trimmed);
+
+        if (!normalizedValue.valid) {
+            throw new Error(normalizedValue.message || "Invalid contact value");
+        }
+
+        const cp: ContactPoint = { id: genId(), type, value: normalizedValue.normalized, label, createdAt: Date.now() };
         _contacts.push(cp);
         return cp;
     },
@@ -245,10 +255,18 @@ export const IdentityStore = {
         const existing = _contacts.filter(c => c.label === "Primary");
         if (existing.length > 0) return; // already seeded
         if (data.mobile) {
-            this.addContact("mobile", data.mobile, "Primary");
+            try {
+                this.addContact("mobile", data.mobile, "Primary");
+            } catch {
+                // Ignore invalid legacy values during bootstrap.
+            }
         }
         if (data.email) {
-            this.addContact("email", data.email, "Primary");
+            try {
+                this.addContact("email", data.email, "Primary");
+            } catch {
+                // Ignore invalid legacy values during bootstrap.
+            }
         }
     },
 

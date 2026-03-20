@@ -206,7 +206,7 @@ export function FileUploader({
                     </div>
                     {!cloudOptIn && (
                         <p className="text-[10px] text-blue-400/60 mt-1">
-                            Cloud sync is currently disabled to ensure 100% zero-knowledge privacy. Your file remains safely inside your device's OPFS Local Vault, accessible only by you.
+                            Cloud sync is currently disabled to ensure 100% zero-knowledge privacy. Your file remains safely inside your device&apos;s OPFS Local Vault, accessible only by you.
                         </p>
                     )}
                 </motion.div>

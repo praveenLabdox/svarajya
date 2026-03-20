@@ -24,6 +24,7 @@ export type OnboardingData = {
 };
 
 let _data: Partial<OnboardingData> = {};
+type FamilyMember = OnboardingData["familyMembers"][number];
 
 export const OnboardingStore = {
     get: () => ({ ..._data }),
@@ -42,7 +43,7 @@ export const OnboardingStore = {
             }
         }
     },
-    addFamilyMember: async (member: any) => {
+    addFamilyMember: async (member: FamilyMember) => {
         _data.familyMembers = [...(_data.familyMembers || []), member];
         if (typeof window !== 'undefined') {
             try {

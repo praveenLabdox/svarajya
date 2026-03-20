@@ -61,7 +61,7 @@ export type LiquiditySettings = {
 
 // ——————— Store Initialization ———————
 
-let _accounts: BankAccount[] = [];
+const _accounts: BankAccount[] = [];
 let _cash: CashWallet = { cashInHand: 0, emergencyCash: 0, pettyCash: 0, updatedAt: "" };
 let _settings: LiquiditySettings = {
     idleThresholdAmount: 150000,

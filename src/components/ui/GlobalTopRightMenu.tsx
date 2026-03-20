@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import { useState } from "react";
+import { usePathname } from "next/navigation";
 import { Sun, Moon, LogOut } from "lucide-react";
 import { ThemeStore, ThemeMode } from "@/lib/themeStore";
 import { createClient } from "@/lib/supabase/client";
@@ -9,20 +9,16 @@ import { createClient } from "@/lib/supabase/client";
 const HIDDEN_PATHS = ["/", "/start", "/intro"];
 
 export function GlobalTopRightMenu() {
-    const router = useRouter();
     const pathname = usePathname();
-    const [theme, setTheme] = useState<ThemeMode>("dark");
-    const [mounted, setMounted] = useState(false);
-
-    useEffect(() => {
-        setMounted(true);
+    const [theme, setTheme] = useState<ThemeMode>(() => {
         if (typeof window !== "undefined") {
             ThemeStore.init();
-            setTheme(ThemeStore.get());
+            return ThemeStore.get();
         }
-    }, [pathname]);
+        return "dark";
+    });
 
-    if (!mounted || HIDDEN_PATHS.includes(pathname) || pathname.startsWith("/onboarding") || pathname === "/dashboard") {
+    if (HIDDEN_PATHS.includes(pathname) || pathname.startsWith("/onboarding") || pathname === "/dashboard") {
         return null;
     }
 

@@ -17,15 +17,15 @@ export const CloudDriveSync = {
     async uploadToGoogleDrive(file: File | Blob, filename: string, accessToken: string): Promise<boolean> {
         try {
             // 1. Create the Svarajya_Nidhi folder if it doesn't already exist
-            let folderId = await this.getOrCreateDriveFolder(accessToken, "Svarajya_Nidhi");
+            const folderId = await this.getOrCreateDriveFolder(accessToken, "Svarajya_Nidhi");
             
             // 2. Upload file directly into that metadata folder via multipart/related
-            let metadata = {
+            const metadata = {
                 name: filename,
                 parents: [folderId],
             };
 
-            let form = new FormData();
+            const form = new FormData();
             form.append("metadata", new Blob([JSON.stringify(metadata)], { type: "application/json" }));
             form.append("file", file);
 

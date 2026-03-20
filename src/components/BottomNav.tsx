@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { Home, Fingerprint, Key, Bell, Sun, Moon, FolderLock, User, MoreHorizontal, LayoutGrid, Settings, ShieldAlert, Cloud, HelpCircle, LogOut, Lock } from "lucide-react";
+import { Home, Bell, Sun, Moon, FolderLock, User, MoreHorizontal, LayoutGrid, Settings, ShieldAlert, Cloud, HelpCircle, LogOut, Lock } from "lucide-react";
 import { NotificationStore } from "@/lib/notificationStore";
 import { ThemeStore, ThemeMode } from "@/lib/themeStore";
 import { createClient } from "@/lib/supabase/client";
@@ -81,7 +81,7 @@ export function BottomNav() {
                             {SECONDARY_TABS.map(item => {
                                 const Icon = item.icon;
                                 const isActive = isTabActive(item.route);
-                                const showBadge = item.id === "notifications" && unreadCount > 0;
+                                const showBadge = item.id === "alerts-sec" && unreadCount > 0;
                                 return (
                                     <button
                                         key={item.id}
