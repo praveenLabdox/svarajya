@@ -1,0 +1,198 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { ShieldCheck, ArrowLeft, CreditCard, FileText, Plane, Car, Vote, MoreHorizontal } from "lucide-react";
+import { IdentityStore, DocType, calcSealStrength } from "@/lib/identityStore";
+import { SealStrengthRing } from "@/components/identity/SealStrengthRing";
+import { VideoTutorialPlaceholder } from "@/components/ui/VideoTutorialPlaceholder";
+import { PageGuide } from "@/components/ui/PageGuide";
+
+const DOC_META: Record<DocType, { label: string; icon: React.ReactNode }> = {
+    aadhaar: { label: "Aadhaar", icon: <CreditCard className="w-5 h-5" /> },
+    pan: { label: "PAN", icon: <FileText className="w-5 h-5" /> },
+    passport: { label: "Passport", icon: <Plane className="w-5 h-5" /> },
+    dl: { label: "Driving License", icon: <Car className="w-5 h-5" /> },
+    voter: { label: "Voter ID", icon: <Vote className="w-5 h-5" /> },
+    other: { label: "Other", icon: <MoreHorizontal className="w-5 h-5" /> },
+};
+
+export default function IdentityHub() {
+    const router = useRouter();
+    // Seed contacts from onboarding profile (mobile/email) on first visit
+    IdentityStore.seedFromOnboarding();
+    const docs = IdentityStore.getDocs();
+    const links = IdentityStore.getLinks();
+    const coverage = IdentityStore.getCoverage();
+    const confidence = IdentityStore.getConfidence();
+    const level = IdentityStore.getLevel();
+    const [now] = useState(() => Date.now());
+
+    const getExpiryBadge = (docType: DocType) => {
+        const typeDocs = IdentityStore.getDocsByType(docType);
+        for (const doc of typeDocs) {
+            if (!doc.expiryDate) continue;
+            const days = Math.ceil((new Date(doc.expiryDate).getTime() - now) / (1000 * 60 * 60 * 24));
+            if (days < 30) return { color: "bg-red-500", text: `${days}d` };
+            if (days < 180) return { color: "bg-amber-400", text: `${days}d` };
+            return { color: "bg-emerald-500", text: "Valid" };
+        }
+        return null;
+    };
+
+    return (
+        <div className="flex flex-col min-h-screen p-6 pb-24 relative">
+            <div className="absolute inset-0 bg-gradient-to-b from-slate-950 via-[#0a1628] to-slate-950 pointer-events-none" />
+            <div className="relative z-10 flex flex-col min-h-screen">
+                {/* Header */}
+                <div className="flex items-center gap-3 pt-8 mb-6">
+                    <button onClick={() => router.back()} className="w-9 h-9 rounded-xl bg-white/6 border border-white/10 flex items-center justify-center shrink-0">
+                        <ArrowLeft className="w-4 h-4 text-white/60" />
+                    </button>
+                    <div className="flex-1">
+                        <h1 className="text-lg font-semibold text-white">Pehchaan Vault</h1>
+                        <p className="text-xs text-white/35 mt-0.5">Store and manage your essential identity documents securely.</p>
+                    </div>
+                </div>
+
+                {/* Guide Section */}
+                <PageGuide
+                    title="What is Pehchaan?"
+                    description="Store your identity documents securely — Aadhaar, PAN, Passport, and more. Track expiry dates, link contacts, and build your identity confidence score."
+                    actions={[{ emoji: "📄", label: "Add documents" }, { emoji: "🔗", label: "Link contacts" }, { emoji: "📅", label: "Track renewals" }]}
+                />
+                <div className="h-4" />
+
+                {/* Coverage + Confidence */}
+                <div className="bg-white/5 border border-white/10 rounded-2xl p-4 mb-4">
+                    <div className="flex items-center justify-between mb-3">
+                        <div>
+                            <p className="text-xs text-white/40 uppercase tracking-wider">Identity Coverage</p>
+                            <p className="text-white font-semibold mt-0.5">{coverage.filled} of {coverage.total} <span className="text-white/40 font-normal text-xs">essential documents</span></p>
+                        </div>
+                        <SealStrengthRing percentage={confidence} size={52} label="Avg" />
+                    </div>
+                    <div className="h-1.5 bg-white/8 rounded-full overflow-hidden mb-2">
+                        <div className="h-full bg-amber-400 rounded-full transition-all duration-700" style={{ width: `${(coverage.filled / coverage.total) * 100}%` }} />
+                    </div>
+                    <div className="flex items-center justify-between">
+                        <p className="text-xs text-white/50">Add more to strengthen your identity readiness.</p>
+                        <span className="text-[10px] text-amber-400 bg-amber-400/10 border border-amber-400/20 px-2 py-0.5 rounded-full">{level}</span>
+                    </div>
+                </div>
+
+                {/* Average Seal Strength bar */}
+                <div className="bg-white/5 border border-white/10 rounded-xl p-3 mb-5 flex items-center gap-3">
+                    <div className="flex-1">
+                        <p className="text-xs text-white/40">Average Document Seal Quality</p>
+                        <div className="h-1 bg-white/8 rounded-full overflow-hidden mt-1">
+                            <div className="h-full bg-amber-400 rounded-full transition-all" style={{ width: `${confidence}%` }} />
+                        </div>
+                    </div>
+                    <span className="text-sm font-bold text-amber-400">{confidence}%</span>
+                </div>
+
+                {/* Seal Cabinet */}
+                <div className="grid grid-cols-2 gap-3 flex-1">
+                    {/* Render core docs */}
+                    {["aadhaar", "pan", "passport", "dl", "voter"].map(type => {
+                        const meta = DOC_META[type as DocType];
+                        const typeDocs = IdentityStore.getDocsByType(type as DocType);
+                        const docCount = typeDocs.length;
+                        const expiry = getExpiryBadge(type as DocType);
+                        const hasVerified = typeDocs.some(d => d.verificationStatus !== "not_verified");
+                        const strength = typeDocs.length > 0 ? calcSealStrength(typeDocs[0], links) : 0;
+
+                        return (
+                            <button
+                                key={type}
+                                onClick={() => docCount > 0 ? router.push(`/identity/doc/${typeDocs[0].id}`) : router.push(`/identity/add?type=${type}`)}
+                                className="bg-white/5 border border-white/10 hover:border-amber-400/40 rounded-2xl p-4 text-left transition-all"
+                            >
+                                <div className="flex items-start justify-between mb-3">
+                                    <div className="text-amber-400">{meta.icon}</div>
+                                    <div className="flex gap-1">
+                                        {expiry && <span className={`w-2 h-2 rounded-full ${expiry.color}`} />}
+                                        {hasVerified && <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />}
+                                    </div>
+                                </div>
+                                <p className="text-sm font-medium text-white">{meta.label}</p>
+                                {docCount > 0 ? (
+                                    <>
+                                        <p className="text-xs text-white/40 mt-0.5">{IdentityStore.maskDocNumber(typeDocs[0].docNumber, type as DocType)}</p>
+                                        <p className="text-[10px] text-amber-400/70 mt-1">{strength}% Secure</p>
+                                    </>
+                                ) : (
+                                    <p className="text-xs text-white/50 mt-0.5">Not added</p>
+                                )}
+                            </button>
+                        );
+                    })}
+
+                    {/* Render dynamically added "Other" documents as separate cards */}
+                    {IdentityStore.getDocsByType("other").map(otherDoc => {
+                        const strength = calcSealStrength(otherDoc, links);
+                        const hasVerified = otherDoc.verificationStatus !== "not_verified";
+
+                        return (
+                            <button
+                                key={otherDoc.id}
+                                onClick={() => router.push(`/identity/doc/${otherDoc.id}`)}
+                                className="bg-white/5 border border-white/10 hover:border-amber-400/40 rounded-2xl p-4 text-left transition-all"
+                            >
+                                <div className="flex items-start justify-between mb-3">
+                                    <div className="text-amber-400">{DOC_META["other"].icon}</div>
+                                    <div className="flex gap-1">
+                                        {hasVerified && <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />}
+                                    </div>
+                                </div>
+                                <p className="text-sm font-medium text-white truncate">{otherDoc.customDocName || "Other"}</p>
+                                <p className="text-xs text-white/40 mt-0.5">{IdentityStore.maskDocNumber(otherDoc.docNumber, "other")}</p>
+                                <p className="text-[10px] text-amber-400/70 mt-1">{strength}% Secure</p>
+                            </button>
+                        );
+                    })}
+
+                    {/* Render "Add Other" button if no other docs exist, or as an extra block */}
+                    <button
+                        onClick={() => router.push(`/identity/add?type=other`)}
+                        className="bg-white/5 border border-white/5 border-dashed hover:border-white/20 rounded-2xl p-4 text-center transition-all flex flex-col items-center justify-center opacity-60 hover:opacity-100"
+                    >
+                        <div className="text-white/40 mb-2">{DOC_META["other"].icon}</div>
+                        <p className="text-sm font-medium text-white/70">Add Custom</p>
+                        <p className="text-xs text-white/40 mt-0.5">Document</p>
+                    </button>
+                </div>
+
+                {/* Navigation buttons */}
+                <div className="space-y-3 mt-5">
+                    <div className="grid grid-cols-2 gap-3">
+                        <button onClick={() => router.push("/identity/links")} className="bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-xs text-white/50 hover:border-white/25 transition-colors">
+                            🔗 Manage Links
+                        </button>
+                        <button onClick={() => router.push("/identity/renewals")} className="bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-xs text-white/50 hover:border-white/25 transition-colors">
+                            📅 Renewals
+                        </button>
+                    </div>
+                    <button onClick={() => router.push("/identity/settings")} className="w-full text-center text-xs text-white/50 py-2 hover:text-white/70 transition-colors">
+                        ⚙️ Vault Settings
+                    </button>
+                </div>
+                {/* YouTube Tutorial */}
+                <div className="mt-4">
+                    <VideoTutorialPlaceholder youtubeId="qvk4GawSxgE" label="Why PAN, Aadhaar & Passport matter for your finances" />
+                </div>
+
+                {/* Primary CTA */}
+                <div className="pb-4 pt-4">
+                    <button
+                        onClick={() => router.push("/identity/add")}
+                        className="w-full bg-amber-400 text-black font-semibold py-4 rounded-xl text-sm hover:bg-amber-300 transition-colors"
+                    >
+                        {docs.length === 0 ? "Add First Document" : "Add Another Document"}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}

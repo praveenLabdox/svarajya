@@ -1,0 +1,218 @@
+"use client";
+
+import { useRef, useState } from "react";
+import { motion } from "framer-motion";
+import { Upload, FileText, X, Cloud, CloudOff, Loader2 } from "lucide-react";
+import { Vault, VaultFolder } from "@/lib/vault";
+import { CloudDriveSync } from "@/lib/cloudDriveSync";
+import { createClient } from "@/lib/supabase/client";
+
+interface FileUploaderProps {
+    folder: VaultFolder;
+    tags?: string[];
+    onUploaded?: (id: string, name: string) => void;
+    accept?: string; // e.g. "image/*,application/pdf"
+    label?: string;
+    compact?: boolean;
+}
+
+export function FileUploader({
+    folder,
+    tags,
+    onUploaded,
+    accept = "image/*,application/pdf",
+    label = "Upload document",
+    compact = false,
+}: FileUploaderProps) {
+    const inputRef = useRef<HTMLInputElement>(null);
+    const [dragging, setDragging] = useState(false);
+    const [uploading, setUploading] = useState(false);
+    const [uploaded, setUploaded] = useState<{ name: string; id: string } | null>(null);
+    const [cloudOptIn, setCloudOptIn] = useState(false);
+    const [preview, setPreview] = useState<string | null>(null);
+    const [docName, setDocName] = useState("");
+    const [docNotes, setDocNotes] = useState("");
+    const [detailsSaved, setDetailsSaved] = useState(false);
+    const [savedFileObj, setSavedFileObj] = useState<File | null>(null);
+    const [syncingCloud, setSyncingCloud] = useState(false);
+    const supabase = createClient();
+
+    const handleFile = async (file: File) => {
+        setUploading(true);
+        // Generate local preview for images
+        if (file.type.startsWith("image/")) {
+            setPreview(URL.createObjectURL(file));
+        }
+        const id = await Vault.saveFile(folder, file, tags);
+        setUploaded({ name: file.name, id });
+        setDocName(file.name);
+        setSavedFileObj(file);
+        setUploading(false);
+        onUploaded?.(id, file.name);
+    };
+
+    const handleSaveDetails = async () => {
+        if (!uploaded) return;
+        await Vault.updateFile(uploaded.id, { name: docName, notes: docNotes });
+        setDetailsSaved(true);
+        onUploaded?.(uploaded.id, docName);
+    };
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) handleFile(file);
+    };
+
+    const handleDrop = (e: React.DragEvent) => {
+        e.preventDefault();
+        setDragging(false);
+        const file = e.dataTransfer.files?.[0];
+        if (file) handleFile(file);
+    };
+
+    const handleCloudToggle = async () => {
+        const newVal = !cloudOptIn;
+        setCloudOptIn(newVal);
+
+        if (newVal && savedFileObj) {
+            setSyncingCloud(true);
+            try {
+                const { data } = await supabase.auth.getSession();
+                const providerToken = data.session?.provider_token;
+                
+                if (!providerToken) {
+                    alert("Google Drive sync failed. Please log out and log back in with Google.");
+                    setCloudOptIn(false);
+                    setSyncingCloud(false);
+                    return;
+                }
+
+                const success = await CloudDriveSync.uploadToGoogleDrive(savedFileObj, docName || savedFileObj.name, providerToken);
+                if (!success) {
+                    alert("Failed to upload to Google Drive.");
+                    setCloudOptIn(false);
+                }
+            } catch (err) {
+                console.error("Cloud toggle error:", err);
+                setCloudOptIn(false);
+            }
+            setSyncingCloud(false);
+        }
+    };
+
+    if (compact && !uploaded) {
+        return (
+            <button
+                onClick={() => inputRef.current?.click()}
+                className="flex items-center gap-2 text-xs text-white/40 hover:text-white/70 border border-white/10 rounded-lg px-3 py-2 hover:border-white/25 transition-colors"
+            >
+                <Upload className="w-3.5 h-3.5" /> Add photo
+                <input ref={inputRef} type="file" accept="image/*" onChange={handleInputChange} className="hidden" />
+            </button>
+        );
+    }
+
+    return (
+        <div className="space-y-3">
+            {!uploaded ? (
+                <div
+                    onDragOver={e => { e.preventDefault(); setDragging(true); }}
+                    onDragLeave={() => setDragging(false)}
+                    onDrop={handleDrop}
+                    onClick={() => inputRef.current?.click()}
+                    className={`w-full border-2 border-dashed rounded-xl p-6 flex flex-col items-center gap-3 cursor-pointer transition-all ${dragging
+                        ? "border-amber-400/60 bg-amber-400/8"
+                        : "border-white/15 bg-white/4 hover:border-white/30 hover:bg-white/6"
+                        }`}
+                >
+                    {uploading ? (
+                        <div className="flex flex-col items-center gap-2">
+                            <div className="w-8 h-8 border-2 border-amber-400 border-t-transparent rounded-full animate-spin" />
+                            <p className="text-xs text-white/40">Saving locally...</p>
+                        </div>
+                    ) : (
+                        <>
+                            <div className="w-10 h-10 rounded-xl bg-white/8 border border-white/10 flex items-center justify-center">
+                                <Upload className="w-5 h-5 text-white/40" />
+                            </div>
+                            <div className="text-center">
+                                <p className="text-sm text-white/60">{label}</p>
+                                <p className="text-xs text-white/30 mt-0.5">Tap to browse or drag & drop</p>
+                                <p className="text-[10px] text-white/20 mt-1">Images & PDFs • Stored on this device</p>
+                            </div>
+                        </>
+                    )}
+                    <input ref={inputRef} type="file" accept={accept} onChange={handleInputChange} className="hidden" />
+                </div>
+            ) : (
+                <motion.div
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-emerald-500/10 border border-emerald-500/25 rounded-xl p-4"
+                >
+                    <div className="flex items-start gap-3">
+                        {preview ? (
+                            // blob: URL previews cannot be optimized by next/image
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={preview} alt="" className="w-12 h-12 rounded-lg object-cover border border-white/10" />
+                        ) : (
+                            <div className="w-12 h-12 rounded-lg bg-white/8 border border-white/10 flex items-center justify-center">
+                                <FileText className="w-5 h-5 text-white/40" />
+                            </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                            <p className="text-sm text-white font-medium truncate">{uploaded.name}</p>
+                            <p className="text-xs text-emerald-400 mt-0.5">✓ Saved to device</p>
+                        </div>
+                        <button onClick={() => { setUploaded(null); setPreview(null); }} className="text-white/30 hover:text-white/60">
+                            <X className="w-4 h-4" />
+                        </button>
+                    </div>
+
+                    {!detailsSaved ? (
+                        <div className="mt-4 pt-3 border-t border-emerald-500/20 space-y-3">
+                            <div className="space-y-1">
+                                <label className="text-[10px] text-white/50 uppercase">Document Name</label>
+                                <input type="text" value={docName} onChange={e => setDocName(e.target.value)}
+                                    className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-400/50" />
+                            </div>
+                            <div className="space-y-1">
+                                <label className="text-[10px] text-white/50 uppercase">Notes (Optional)</label>
+                                <textarea value={docNotes} onChange={e => setDocNotes(e.target.value)} rows={2} placeholder="e.g. Policy number, expiry..."
+                                    className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder-white/20 focus:outline-none focus:border-amber-400/50 resize-none" />
+                            </div>
+                            <button onClick={handleSaveDetails}
+                                className="w-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-medium py-2 rounded-lg text-sm transition-colors hover:bg-emerald-500/30">
+                                Save Details
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="mt-3 pt-3 border-t border-emerald-500/20 flex items-center gap-2">
+                            <p className="text-xs text-emerald-400/80">Details saved successfully.</p>
+                        </div>
+                    )}
+
+                    {/* Cloud opt-in */}
+                    <div className="flex items-center justify-between mt-3 pt-3 border-t border-white/8">
+                        <div className="flex items-center gap-2">
+                            {syncingCloud ? <Loader2 className="w-3.5 h-3.5 text-blue-400 animate-spin" /> : cloudOptIn ? <Cloud className="w-3.5 h-3.5 text-blue-400" /> : <CloudOff className="w-3.5 h-3.5 text-white/25" />}
+                            <span className="text-xs text-white/40">{syncingCloud ? "Syncing..." : cloudOptIn ? "Synced to Google Drive" : "Also store in cloud"}</span>
+                        </div>
+                        <button
+                            onClick={handleCloudToggle}
+                            disabled={syncingCloud}
+                            className={`w-8 h-5 rounded-full transition-colors disabled:opacity-50 ${cloudOptIn ? "bg-blue-500" : "bg-white/15"}`}
+                        >
+                            <div className={`w-3.5 h-3.5 rounded-full bg-white shadow transition-transform mx-0.5 ${cloudOptIn ? "translate-x-3" : ""}`} />
+                        </button>
+                    </div>
+                    {!cloudOptIn && (
+                        <p className="text-[10px] text-blue-400/60 mt-1">
+                            Cloud sync is currently disabled to ensure 100% zero-knowledge privacy. Your file remains safely inside your device&apos;s OPFS Local Vault, accessible only by you.
+                        </p>
+                    )}
+                </motion.div>
+            )}
+        </div>
+    );
+}
