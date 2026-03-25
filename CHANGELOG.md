@@ -10,6 +10,17 @@ Format follows [Keep a Changelog](https://keepachangelog.com/).
 - PR template for structured code reviews
 - CHANGELOG.md for tracking all changes
 - `develop` branch for staging workflow
+- Bank summary backend covering accounts, cash wallet, liquidity settings, and derived flow metrics
+- Supabase-ready branded confirmation email template at `supabase-email-templates/confirm-signup.html`
+
+### Changed
+- Bank hub, add-account, cash, flow, and idle screens now use the backend summary API instead of local seeded bank state
+- Dashboard bank guidance now reads real bank account counts from the API
+- Prisma config now loads `.env.local` automatically for local CLI commands
+
+### Fixed
+- Duplicate `disabled` props removed from the bank add-account save button
+- Bank account save button now exits early when saving is in progress or a duplicate warning is active
 
 ---
 
@@ -60,8 +71,3 @@ Format follows [Keep a Changelog](https://keepachangelog.com/).
 - Document validation layer for identity documents
 - OPFS vault, cloud sync, and auth security (Phase 4)
 - Prisma schema for all modules
-
-
-
-$envFile = ".\sva-rajya-main\.env.local"; $resendKey = (Get-Content $envFile | Where-Object { $_ -match '^RESEND_API_KEY=' } | Select-Object -First 1).Split('=',2)[1]; if (-not $resendKey) { throw 'RESEND_API_KEY not found in .env.local' }; $headers = @{ Authorization = "Bearer $resendKey"; 'Content-Type' = 'application/json' }; $payload = @{ from = 'onboarding@svarajya.com'; to = @('praveen94h@gmail.com'); subject = 'Svarajya Resend Test'; text = 'This is a test email sent from the Svarajya setup using Resend. If you received this, outbound email delivery is working.' } | ConvertTo-Json -Depth 5; try { $response = Invoke-RestMethod -Method Post -Uri 
-'https://api.resend.com/emails' -Headers $headers -Body $payload; $response | ConvertTo-Json -Depth 6 } catch { if ($_.Exception.Response) { $reader = New-Object System.IO.StreamReader($_.Exception.Response.GetResponseStream()); $body = $reader.ReadToEnd(); Write-Output $body } else { throw } }

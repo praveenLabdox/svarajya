@@ -236,9 +236,11 @@ export default function AddBankAccount() {
 
                 <div className="fixed bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black via-black/90 to-transparent">
                     <button
-                        disabled={duplicateWarning && !error}
-                        onClick={duplicateWarning && !error ? () => { } : () => { void handleSave(); }}
                         disabled={saving || (duplicateWarning && !error)}
+                        onClick={() => {
+                            if (saving || (duplicateWarning && !error)) return;
+                            void handleSave();
+                        }}
                         className={`w-full py-4 rounded-xl font-bold shadow-xl transition-all ${duplicateWarning && !error ? "bg-white/10 text-white/30 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-500 text-white"
                             }`}
                     >
