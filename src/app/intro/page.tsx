@@ -147,7 +147,7 @@ export default function IntroOnboarding() {
             
             {/* Dynamic Gold Light Texture (Parallax emulation via slow motion) */}
             <motion.div 
-                className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-overlay pointer-events-none z-0"
+                className="absolute inset-0 bg-[url('/noise.svg')] opacity-20 mix-blend-overlay pointer-events-none z-0"
                 animate={{ x: [0, -20, 0], y: [0, -10, 0] }}
                 transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
             />
