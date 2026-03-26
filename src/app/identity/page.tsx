@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ShieldCheck, ArrowLeft, CreditCard, FileText, Plane, Car, Vote, MoreHorizontal } from "lucide-react";
 import { IdentityStore, DocType, calcSealStrength } from "@/lib/identityStore";
@@ -17,8 +17,12 @@ const DOC_META: Record<DocType, { label: string; icon: React.ReactNode }> = {
     other: { label: "Other", icon: <MoreHorizontal className="w-5 h-5" /> },
 };
 
+// const DOC_TYPES: DocType[] = ["aadhaar", "pan", "passport", "dl", "voter", "other"]; // unused
+
 export default function IdentityHub() {
     const router = useRouter();
+    const [, setHydrated] = useState(false);
+    useEffect(() => { IdentityStore.hydrate().then(() => setHydrated(true)); }, []);
     // Seed contacts from onboarding profile (mobile/email) on first visit
     IdentityStore.seedFromOnboarding();
     const docs = IdentityStore.getDocs();

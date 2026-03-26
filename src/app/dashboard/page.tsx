@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import {
     Shield, BookOpen, Coins, Activity, Users, AlertCircle, Fingerprint, Key,
-    ChevronRight, Info, Droplets
+    ChevronRight, Sun, Moon, Info, Droplets
 } from "lucide-react";
 import { IdentityStore } from "@/lib/identityStore";
 import { CredentialStore } from "@/lib/credentialStore";
@@ -15,22 +15,25 @@ import { BankStore } from "@/lib/bankStore";
 import { OnboardingStore } from "@/lib/onboardingStore";
 import { ThemeStore, ThemeMode } from "@/lib/themeStore";
 import { VideoTutorialPlaceholder } from "@/components/ui/VideoTutorialPlaceholder";
+import { UserAvatar } from "@/components/ui/UserAvatar";
 import { fetchBankSummary } from "@/lib/bankApi";
 
 export default function Dashboard() {
     const router = useRouter();
-    const [_theme, _setTheme] = useState<ThemeMode>(() => {
+    const [theme, setTheme] = useState<ThemeMode>(() => {
         if (typeof window !== "undefined") {
             ThemeStore.init();
             return ThemeStore.get();
         }
         return "dark";
     });
+
     const [bankAccountCount, setBankAccountCount] = useState<number | null>(null);
 
     useEffect(() => {
-        let active = true;
+        OnboardingStore.hydrate();
 
+        let active = true;
         fetchBankSummary()
             .then((summary) => {
                 if (active) setBankAccountCount(summary.accounts.length);
@@ -38,10 +41,7 @@ export default function Dashboard() {
             .catch(() => {
                 if (active) setBankAccountCount(null);
             });
-
-        return () => {
-            active = false;
-        };
+        return () => { active = false; };
     }, []);
 
     // Dynamic identity coverage
@@ -126,9 +126,9 @@ export default function Dashboard() {
         }
     };
 
-    const _handleToggleTheme = () => {
+    const handleToggleTheme = () => {
         const next = ThemeStore.toggle();
-        _setTheme(next);
+        setTheme(next);
     };
 
     const hasMinimalVyayaData = ExpenseStore.getEntryCount() >= 3;
@@ -174,21 +174,26 @@ export default function Dashboard() {
     const nextAction = getNextBestAction();
 
     return (
-        <div className="flex flex-col min-h-screen p-6 pb-24 relative">
+        <div className="flex flex-col min-h-screen p-6 pb-24 lg:pb-8 lg:px-10 lg:pt-10 relative">
+            {/* Ambient glow — larger on desktop */}
             <div className="absolute top-0 left-0 w-full h-64 bg-gradient-to-b from-[var(--color-rajya-accent)]/10 to-transparent pointer-events-none" />
+            <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-amber-400/5 blur-[120px] rounded-full pointer-events-none hidden lg:block" />
 
             {/* Header */}
-            <header className="mb-6 relative z-10 pt-4">
-                <div className="flex items-center justify-between mb-2">
+            <header className="mb-8 relative z-10 pt-2">
+                <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="font-display text-3xl text-[var(--color-rajya-text)]">Rajya Map</h1>
-                        <p className="text-[var(--color-rajya-muted)] text-sm uppercase tracking-widest">Oversee your Kingdom</p>
+                        <h1 className="font-display text-3xl lg:text-5xl text-[var(--color-rajya-text)]">Rajya Map</h1>
+                        <p className="text-[var(--color-rajya-muted)] text-sm uppercase tracking-widest mt-1">Oversee your Kingdom</p>
                     </div>
                 </div>
             </header>
 
-            {/* Guide Section */}
-            <div className="bg-[var(--color-rajya-card)] border border-[var(--color-rajya-accent)]/20 rounded-xl p-4 mb-6 flex items-start gap-3 relative z-10">
+            {/* Constrain desktop width so content doesn't stretch to screen edge */}
+            <div className="lg:max-w-5xl lg:w-full">
+
+            {/* Guide Section — only show on mobile; sidebar has stats on desktop */}
+            <div className="bg-[var(--color-rajya-card)] border border-[var(--color-rajya-accent)]/20 rounded-xl p-4 mb-6 flex items-start gap-3 relative z-10 lg:hidden">
                 <Info className="w-5 h-5 text-[var(--color-rajya-accent)] shrink-0 mt-0.5" />
                 <div>
                     <p className="text-sm font-medium text-[var(--color-rajya-text)]">Your Financial Kingdom</p>
@@ -219,27 +224,29 @@ export default function Dashboard() {
                 <VideoTutorialPlaceholder youtubeId="iWsQY6Ha4OE" label="Complete guide to managing your personal finances" />
             </div>
 
-            {/* Stability Score HUD */}
+            {/* Stability Score HUD — enhanced glow on desktop */}
             <motion.div
                 initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-[var(--color-rajya-card)] border border-[var(--color-rajya-accent-dim)] rounded-2xl p-6 mb-8 shadow-lg relative overflow-hidden"
+                className="bg-[var(--color-rajya-card)] border border-[var(--color-rajya-accent-dim)] rounded-2xl p-6 mb-8 shadow-lg lg:shadow-[0_0_60px_rgba(251,191,36,0.08)] relative overflow-hidden"
             >
+                {/* Glow blobs */}
                 <div className="absolute right-0 top-0 w-32 h-32 bg-[var(--color-rajya-accent)]/10 blur-3xl rounded-full" />
+                <div className="absolute -left-10 -bottom-10 w-48 h-48 bg-[var(--color-rajya-accent)]/5 blur-[80px] rounded-full hidden lg:block" />
 
                 <div className="flex items-center justify-between mb-2">
-                    <h2 className="text-[var(--color-rajya-text)] font-semibold tracking-wide">RAJYA HEALTH SCORE</h2>
-                    <span className="text-3xl font-display text-[var(--color-rajya-accent)]">{stabilityScore}%</span>
+                    <h2 className="text-[var(--color-rajya-text)] font-semibold tracking-wide lg:text-lg">RAJYA HEALTH SCORE</h2>
+                    <span className="text-3xl lg:text-5xl font-display text-[var(--color-rajya-accent)]">{stabilityScore}%</span>
                 </div>
                 
                 <p className="text-[10px] text-[var(--color-rajya-muted)] mb-4">This score represents overall financial health across Mandals.</p>
 
-                <div className="h-2 w-full bg-[var(--color-rajya-muted)]/20 rounded-full overflow-hidden">
+                <div className="h-2 lg:h-3 w-full bg-[var(--color-rajya-muted)]/20 rounded-full overflow-hidden">
                     <motion.div
                         initial={{ width: 0 }}
                         animate={{ width: `${stabilityScore}%` }}
                         transition={{ duration: 1.5, ease: "easeOut" }}
-                        className="h-full bg-gradient-to-r from-[var(--color-rajya-accent-dim)] to-[var(--color-rajya-accent)]"
+                        className="h-full bg-gradient-to-r from-[var(--color-rajya-accent-dim)] to-[var(--color-rajya-accent)] shadow-[0_0_8px_rgba(251,191,36,0.5)]"
                     />
                 </div>
 
@@ -251,21 +258,21 @@ export default function Dashboard() {
                 )}
             </motion.div>
 
-            {/* Zone Cards */}
-            <div className="grid grid-cols-1 gap-3 flex-1 relative z-10">
+            {/* Zone Cards — 1-col mobile, 2-col desktop */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 flex-1 relative z-10">
                 {KINGDOM_ZONES.map((zone, i) => {
                     const config = getStatusConfig(zone.status);
                     return (
                         <motion.button
                             key={zone.id}
-                            initial={{ opacity: 0, x: -20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: i * 0.08 }}
+                            initial={{ opacity: 0, y: 20 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true }}
+                            transition={{ delay: i * 0.05 }}
                             onClick={() => router.push(zone.route)}
-                            className={`w-full text-left p-4 rounded-xl border-2 flex items-center justify-between transition-all hover:scale-[1.01] active:scale-[0.99] ${config.border} ${config.bg}`}
+                            className={`w-full text-left p-4 rounded-xl border-2 flex items-center justify-between transition-all hover:scale-[1.01] hover:shadow-lg active:scale-[0.99] ${config.border} ${config.bg}`}
                         >
                             <div className="flex items-center gap-3">
-                                {/* Solid colored icon container */}
                                 <div className={`w-10 h-10 rounded-lg ${config.iconBg} flex items-center justify-center text-white shadow-sm`}>
                                     {zone.icon}
                                 </div>
@@ -282,7 +289,6 @@ export default function Dashboard() {
                                     </div>
                                 </div>
                             </div>
-                            {/* Clear CTA button instead of faint arrow */}
                             <div className={`px-3 py-1.5 rounded-lg ${config.ctaBg} text-white text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 shadow-sm`}>
                                 Open
                                 <ChevronRight className="w-3 h-3" />
@@ -304,6 +310,7 @@ export default function Dashboard() {
                     <Activity className="w-4 h-4" /> Run Leakage Audit
                 </motion.button>
             )}
+            </div>{/* end lg:max-w-5xl constraint */}
         </div>
     );
 }

@@ -2,10 +2,19 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+// import { Info } from "lucide-react"; // unused
+// import { Shield } from "lucide-react"; // unused
+// import { TrendingUp } from "lucide-react"; // unused
+// import { Eye } from "lucide-react"; // unused
+// import { CheckCircle2 } from "lucide-react"; // unused
 import { ArrowLeft, ChevronRight } from "lucide-react";
-import { IncomeStore, INCOME_TYPES, formatRupee } from "@/lib/incomeStore";
+import { IncomeStore, formatRupee, INCOME_TYPES } from "@/lib/incomeStore";
 import { DependencyBadge } from "@/components/treasury/DependencyBadge";
 import { PageGuide } from "@/components/ui/PageGuide";
+
+// Captured once at module load — react-hooks/purity forbids Date.now() inside components
+const PAGE_LOAD_NOW = Date.now();
+
 import { VideoTutorialPlaceholder } from "@/components/ui/VideoTutorialPlaceholder";
 
 export default function AnalyticsPage() {
@@ -16,9 +25,10 @@ export default function AnalyticsPage() {
     const depLevel = IncomeStore.getDependencyLevel();
     const diversity = IncomeStore.getDiversityScore();
     const contributions = IncomeStore.getSourceContributions();
-
     const [expandedPillar, setExpandedPillar] = useState<string | null>(null);
-    const [now] = useState(() => Date.now());
+
+    // Stable timestamp — captured at module load to satisfy react-hooks/purity
+    const now = PAGE_LOAD_NOW;
 
     if (records.length === 0) {
         return (

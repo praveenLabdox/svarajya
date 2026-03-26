@@ -57,7 +57,8 @@ export default function RootLayout({
         `}} />
       </head>
       <body suppressHydrationWarning className="bg-[var(--color-rajya-bg)] text-[var(--color-rajya-text)] font-sans antialiased min-h-screen selection:bg-[var(--color-rajya-accent)] selection:text-black">
-        <div className="max-w-md mx-auto min-h-screen bg-[var(--color-rajya-bg)] relative overflow-hidden shadow-2xl shadow-black/50 border-x border-white/5">
+        {/* Mobile: centered narrow column. Desktop: full-width 3-col flex shell */}
+        <div className="max-w-md mx-auto min-h-screen bg-[var(--color-rajya-bg)] relative overflow-hidden shadow-2xl shadow-black/50 border-x border-white/5 lg:max-w-none lg:overflow-visible lg:shadow-none lg:border-x-0">
           <LayoutClient>{children}</LayoutClient>
         </div>
       </body>

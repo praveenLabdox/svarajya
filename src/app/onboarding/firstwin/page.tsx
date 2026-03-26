@@ -50,6 +50,13 @@ function FirstWinContent() {
      
     }, []);
 
+    const handleFinish = () => {
+        if (priority) OnboardingStore.set({ priority });
+        localStorage.setItem(LAST_LOGIN_KEY, new Date().toISOString());
+        router.push("/dashboard");
+    };
+
+
     // --- RETURNING USER VIEW ---
     if (isReturning) {
         return (
@@ -87,7 +94,10 @@ function FirstWinContent() {
                         initial={{ opacity: 0, y: 16 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.6 }}
-                        onClick={() => router.push("/dashboard")}
+                        onClick={() => {
+                            localStorage.setItem(LAST_LOGIN_KEY, new Date().toISOString());
+                            router.push("/dashboard");
+                        }}
                         className="w-full max-w-xs bg-amber-400 text-black font-bold py-4 rounded-xl text-sm flex items-center justify-center gap-2 hover:bg-amber-300 transition-colors"
                     >
                         Enter Rajya
@@ -168,6 +178,7 @@ function FirstWinContent() {
                                 onClick={() => {
                                     setPriority(p.id);
                                     OnboardingStore.set({ priority: p.id });
+                                    localStorage.setItem(LAST_LOGIN_KEY, new Date().toISOString());
                                     setTimeout(() => router.push("/dashboard"), 300);
                                 }}
                                 className={`p-3 rounded-xl border text-left transition-all hover:-translate-y-1 ${priority === p.id
@@ -198,7 +209,7 @@ function FirstWinContent() {
 
 export default function FirstWin() {
     return (
-        <Suspense fallback={<div className="min-h-screen bg-slate-950 flex items-center justify-center"><div className="w-8 h-8 rounded-full border-2 border-amber-400 border-t-transparent animate-spin" /></div>}>
+        <Suspense fallback={<div className="min-h-screen bg-[#0a1628]" />}>
             <FirstWinContent />
         </Suspense>
     );

@@ -80,9 +80,9 @@ export async function POST(request: Request) {
       });
       return NextResponse.json(created);
     }
-  } catch (error: unknown) {
+  } catch (error: any) {
     console.error("POST Identity Error", error);
-    if (typeof error === 'object' && error !== null && 'code' in error && (error as { code?: string }).code === 'P2002') {
+    if (error.code === 'P2002') {
         return NextResponse.json({ error: "DUPLICATE: This document already exists." }, { status: 409 });
     }
     return NextResponse.json({ error: "Failed to save document" }, { status: 500 });

@@ -6,7 +6,6 @@ import { Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, CheckCircle2 } from "lucide-react";
 import { IdentityStore, DocType } from "@/lib/identityStore";
-import { validateControlledEmail, validateIndianMobile } from "@/lib/contactValidation";
 
 const SERVICE_TYPES = [
     { id: "bank", label: "Bank", emoji: "🏦" },
@@ -55,23 +54,9 @@ function LinkWizardForm() {
 
     const handleAddContact = (type: "mobile" | "email", value: string) => {
         if (!value.trim()) return;
-
-        const validation = type === "mobile"
-            ? validateIndianMobile(value)
-            : validateControlledEmail(value);
-        if (!validation.valid) {
-            setError(validation.message || "Invalid contact value.");
-            return;
-        }
-
-        try {
-            const cp = IdentityStore.addContact(type, validation.normalized);
-            setContactPointId(cp.id);
-            setError("");
-            if (type === "mobile") setNewMobile(""); else setNewEmail("");
-        } catch (e) {
-            setError(e instanceof Error ? e.message : "Unable to add contact.");
-        }
+        const cp = IdentityStore.addContact(type, value.trim());
+        setContactPointId(cp.id);
+        if (type === "mobile") setNewMobile(""); else setNewEmail("");
     };
 
     const handleSave = () => {
@@ -218,13 +203,12 @@ function LinkWizardForm() {
                                 )}
                                 <p className="text-[10px] text-white/25">Want to use a different number? Add below.</p>
                                 <div className="flex gap-2">
-                                    <input type="tel" placeholder="Add mobile" value={newMobile} onChange={e => { setNewMobile(e.target.value.replace(/\D/g, "").slice(0, 10)); setError(""); }}
-                                        inputMode="numeric" pattern="[0-9]{10}" maxLength={10}
+                                    <input type="tel" placeholder="Add mobile" value={newMobile} onChange={e => setNewMobile(e.target.value)}
                                         className="flex-1 bg-white/6 border border-white/15 rounded-xl px-3 py-2 text-sm text-white placeholder-white/20 focus:outline-none" />
                                     <button onClick={() => handleAddContact("mobile", newMobile)} className="px-3 bg-amber-400/15 border border-amber-400/30 rounded-xl text-xs text-amber-400">Add</button>
                                 </div>
                                 <div className="flex gap-2">
-                                    <input type="email" placeholder="Add email" value={newEmail} onChange={e => { setNewEmail(e.target.value.trim().toLowerCase()); setError(""); }}
+                                    <input type="email" placeholder="Add email" value={newEmail} onChange={e => setNewEmail(e.target.value)}
                                         className="flex-1 bg-white/6 border border-white/15 rounded-xl px-3 py-2 text-sm text-white placeholder-white/20 focus:outline-none" />
                                     <button onClick={() => handleAddContact("email", newEmail)} className="px-3 bg-amber-400/15 border border-amber-400/30 rounded-xl text-xs text-amber-400">Add</button>
                                 </div>

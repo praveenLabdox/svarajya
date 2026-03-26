@@ -2,6 +2,10 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { createClient } from '@/lib/supabase/server';
 
+function isDatabaseUnavailable(error: unknown) {
+  return !!error && typeof error === 'object' && 'code' in error && error.code === 'P1001';
+}
+
 export async function GET() {
   try {
     const supabase = await createClient();
@@ -11,18 +15,42 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const profile = await prisma.userProfile.findUnique({
+    let profile = await prisma.userProfile.findUnique({
       where: { authId: user.id },
       include: {
         familyMembers: true
       }
     });
+    
+    // Fallback: If no profile by Auth UUID, check for a record with the same email
+    // This handles users who were created in the DB but not yet linked to Supabase Auth
+    if (!profile && user.email) {
+      profile = await prisma.userProfile.findUnique({
+        where: { email: user.email },
+        include: {
+          familyMembers: true
+        }
+      });
+      
+      // Auto-link the accounts if found
+      if (profile && !profile.authId) {
+        await prisma.userProfile.update({
+          where: { id: profile.id },
+          data: { authId: user.id }
+        });
+        console.log(`[API] Auto-linked existing profile ${profile.id} to authId ${user.id} via email ${user.email}`);
+      }
+    }
 
     if (!profile) {
       return NextResponse.json(null);
     }
     return NextResponse.json(profile);
   } catch (error) {
+    if (isDatabaseUnavailable(error)) {
+      console.warn("GET Profile Warning: database temporarily unavailable");
+      return NextResponse.json(null);
+    }
     console.error("GET Profile Error", error);
     return NextResponse.json({ error: "Failed to fetch profile" }, { status: 500 });
   }
@@ -39,10 +67,16 @@ export async function POST(request: Request) {
 
     const data = await request.json();
     
-    // Check if profile exists for this auth user
-    const existing = await prisma.userProfile.findUnique({
+    // Check if profile exists by Auth UUID or Email (linker)
+    let existing = await prisma.userProfile.findUnique({
       where: { authId: user.id }
     });
+
+    if (!existing && (data.email || user.email)) {
+        existing = await prisma.userProfile.findUnique({
+            where: { email: data.email || user.email }
+        });
+    }
     
     if (existing) {
       const updated = await prisma.userProfile.update({

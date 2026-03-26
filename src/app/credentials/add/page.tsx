@@ -12,7 +12,6 @@ import { IdentityStore } from "@/lib/identityStore";
 import { OnboardingStore } from "@/lib/onboardingStore";
 import { MasterPassphraseModal } from "@/components/credentials/MasterPassphraseModal";
 import { VideoTutorialPlaceholder } from "@/components/ui/VideoTutorialPlaceholder";
-import { validateControlledEmail, validateIndianMobile } from "@/lib/contactValidation";
 
 export default function AddPortalPage() {
     const router = useRouter();
@@ -79,39 +78,19 @@ export default function AddPortalPage() {
     const emails = contacts.filter(c => c.type === "email");
 
     const handleAddMobile = () => {
-        const result = validateIndianMobile(newMobile);
-        if (!result.valid) {
-            setError(result.message || "Enter a valid mobile number.");
-            return;
-        }
-
-        try {
-            const cp = IdentityStore.addContact("mobile", result.normalized);
-            setRegisteredMobileId(cp.id);
-            setNewMobile("");
-            setError("");
-            setContacts(IdentityStore.getContacts());
-        } catch (e) {
-            setError(e instanceof Error ? e.message : "Could not add mobile contact.");
-        }
+        if (!newMobile.trim()) return;
+        const cp = IdentityStore.addContact("mobile", newMobile.trim());
+        setRegisteredMobileId(cp.id);
+        setNewMobile("");
+        setContacts(IdentityStore.getContacts());
     };
 
     const handleAddEmail = () => {
-        const result = validateControlledEmail(newEmail);
-        if (!result.valid) {
-            setError(result.message || "Enter a valid email.");
-            return;
-        }
-
-        try {
-            const cp = IdentityStore.addContact("email", result.normalized);
-            setRegisteredEmailId(cp.id);
-            setNewEmail("");
-            setError("");
-            setContacts(IdentityStore.getContacts());
-        } catch (e) {
-            setError(e instanceof Error ? e.message : "Could not add email contact.");
-        }
+        if (!newEmail.trim()) return;
+        const cp = IdentityStore.addContact("email", newEmail.trim());
+        setRegisteredEmailId(cp.id);
+        setNewEmail("");
+        setContacts(IdentityStore.getContacts());
     };
 
     const tutorial = category ? CATEGORY_TUTORIALS[category] : null;
@@ -484,8 +463,7 @@ export default function AddPortalPage() {
                             </select>
                             {registeredMobileId === "add_new" && (
                                 <div className="flex gap-2">
-                                    <input type="text" placeholder="Enter new mobile" value={newMobile} onChange={e => { setNewMobile(e.target.value.replace(/\D/g, "").slice(0, 10)); setError(""); }} 
-                                        inputMode="numeric" pattern="[0-9]{10}" maxLength={10}
+                                    <input type="text" placeholder="Enter new mobile" value={newMobile} onChange={e => setNewMobile(e.target.value)} 
                                         className="flex-1 bg-white/6 border border-white/15 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-400/60" />
                                     <button type="button" onClick={handleAddMobile}
                                         className="bg-amber-400/20 text-amber-400 px-3 py-2 rounded-xl text-sm border border-amber-400/40">Add</button>
@@ -504,7 +482,7 @@ export default function AddPortalPage() {
                             </select>
                             {registeredEmailId === "add_new" && (
                                 <div className="flex gap-2">
-                                    <input type="email" placeholder="Enter new email" value={newEmail} onChange={e => { setNewEmail(e.target.value.trim().toLowerCase()); setError(""); }} 
+                                    <input type="email" placeholder="Enter new email" value={newEmail} onChange={e => setNewEmail(e.target.value)} 
                                         className="flex-1 bg-white/6 border border-white/15 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-400/60" />
                                     <button type="button" onClick={handleAddEmail}
                                         className="bg-amber-400/20 text-amber-400 px-3 py-2 rounded-xl text-sm border border-amber-400/40">Add</button>

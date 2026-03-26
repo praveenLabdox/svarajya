@@ -21,7 +21,8 @@ export default function AddExpensePage() {
     const [showOptional, setShowOptional] = useState(false);
     const [description, setDescription] = useState("");
     const [linkedFamilyId, setLinkedFamilyId] = useState("");
-    const [paidFromAccount, setPaidFromAccount] = useState("");
+    // const [paidFromAccount, setPaidFromAccount] = useState(""); // unused — Module 6 not yet connected
+    const [paidFromAccount] = useState("");
 
     // UI
     const [error, setError] = useState("");

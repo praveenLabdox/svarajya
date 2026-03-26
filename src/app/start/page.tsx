@@ -25,28 +25,19 @@ export default function AuthGateway() {
     const [error, setError] = useState("");
     const [msg, setMsg] = useState("");
 
-    const getErrorMessage = (err: unknown, fallback: string) => {
-        if (typeof err === "object" && err !== null && "message" in err) {
-            const msg = (err as { message?: string }).message;
-            if (!msg) return fallback;
-            if (msg.toLowerCase().includes("email not confirmed")) {
-                return "Your email is not verified yet. Open the verification link sent to your inbox, then log in.";
-            }
-            return msg;
-        }
-        return fallback;
-    };
-
     const handleAuth = async (e: React.FormEvent) => {
         e.preventDefault();
         setError("");
         setMsg("");
 
-        const trimmedEmail = email.trim().toLowerCase();
+        // Client-side validations
+        const trimmedEmail = email.trim();
         if (!trimmedEmail || !/^\S+@\S+\.\S+$/.test(trimmedEmail)) {
             setError("Please enter a valid email address.");
             return;
         }
+
+
 
         if (mode === "signup") {
             if (!fullName.trim()) {
@@ -75,28 +66,29 @@ export default function AuthGateway() {
 
         try {
             if (mode === "signup") {
-                const verificationRedirect = `${window.location.origin}/auth/callback?next=/onboarding/name`;
                 const { data, error: signUpError } = await supabase.auth.signUp({
                     email: trimmedEmail,
                     password,
                     options: {
-                        data: { full_name: fullName.trim() },
-                        emailRedirectTo: verificationRedirect,
-                    },
+                        data: { full_name: fullName.trim() }
+                    }
                 });
                 if (signUpError) throw signUpError;
-
+                
+                // If email confirmation is required, session will be null
                 if (!data.session) {
-                    setMsg("Verification link sent. Check your email, open the link, then continue into your Rajya.");
-                    setPassword("");
-                    setConfirmPassword("");
                     setMode("login");
+                    setMsg("Account created! Please check your email to verify your account before logging in.");
                     return;
                 }
 
-                router.push("/onboarding/name");
-                setPassword("");
-                return;
+                // If no confirmation needed, try direct login
+                const { error: signInError } = await supabase.auth.signInWithPassword({
+                    email: trimmedEmail,
+                    password,
+                });
+                if (signInError) throw signInError;
+                router.push("/onboarding");
             } else if (mode === "forgot_password") {
                 const { error: resetError } = await supabase.auth.resetPasswordForEmail(trimmedEmail, {
                     redirectTo: `${window.location.origin}/dashboard`
@@ -112,10 +104,10 @@ export default function AuthGateway() {
                     password,
                 });
                 if (signInError) throw signInError;
-                router.push("/dashboard");
+                router.push("/dashboard"); 
             }
-        } catch (err: unknown) {
-            setError(getErrorMessage(err, "Failed to authenticate."));
+        } catch (err: any) {
+            setError(err.message || "Failed to authenticate.");
         } finally {
             setLoading(false);
         }
@@ -133,8 +125,8 @@ export default function AuthGateway() {
                 }
             });
             if (error) throw error;
-        } catch (err: unknown) {
-            setError(getErrorMessage(err, "Failed to initialize Google login."));
+        } catch (err: any) {
+            setError(err.message || "Failed to initialize Google login.");
             setLoading(false);
         }
     };
@@ -266,6 +258,7 @@ export default function AuthGateway() {
                                     )}
                                     {mode === "signup" && (
                                         <div className="space-y-4">
+                                            {/* Password Requirements Checklist */}
                                             <div className="space-y-2 px-1">
                                                 <div className="flex items-center gap-2 text-xs">
                                                     {password.length >= 8 ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <X className="w-3.5 h-3.5 text-red-500/70" />}
@@ -343,7 +336,7 @@ export default function AuthGateway() {
                                 onClick={handleGoogleLogin}
                                 disabled={loading}
                                 type="button"
-                                className="w-full bg-white text-black font-medium py-3.5 rounded-xl text-sm flex items-center justify-center gap-3 transition-colors disabled:opacity-70 hover:bg-slate-200"
+                                className="w-full bg-white/5 border border-white/10 text-white font-medium py-3.5 rounded-xl text-sm flex items-center justify-center gap-3 transition-colors disabled:opacity-50 hover:bg-white/10"
                             >
                                 <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                     <path d="M22.56 12.25C22.56 11.47 22.49 10.72 22.36 10H12V14.26H17.92C17.67 15.63 16.86 16.79 15.69 17.57V20.34H19.26C21.35 18.41 22.56 15.58 22.56 12.25Z" fill="#4285F4"/>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Lock, Unlock, Key } from "lucide-react";
 import { CredentialStore, PORTAL_CATEGORIES } from "@/lib/credentialStore";
@@ -21,6 +21,8 @@ function crossDeps() {
 
 export default function KeyChamberHub() {
     const router = useRouter();
+    const [, setHydrated] = useState(false);
+    useEffect(() => { CredentialStore.hydrate().then(() => setHydrated(true)); }, []);
     const [renderTime] = useState(() => Date.now());
     const portals = CredentialStore.getPortals();
     const deps = crossDeps();

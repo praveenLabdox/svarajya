@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, BarChart3, Settings, CreditCard, Scissors } from "lucide-react";
 import { ExpenseStore, formatRupee } from "@/lib/expenseStore";
@@ -9,6 +10,10 @@ import { VideoTutorialPlaceholder } from "@/components/ui/VideoTutorialPlacehold
 
 export default function VyayaHub() {
     const router = useRouter();
+    const [, setHydrated] = useState(false);
+    useEffect(() => {
+        Promise.all([IncomeStore.hydrate(), ExpenseStore.hydrate()]).then(() => setHydrated(true));
+    }, []);
     const monthlyExpense = ExpenseStore.getMonthlyTotal();
     const monthlyIncome = IncomeStore.getMonthlyNetIncome();
     const ratio = ExpenseStore.getExpenseToIncomeRatio();
@@ -165,7 +170,7 @@ export default function VyayaHub() {
                         <span className="text-xs text-amber-400/60">{maturity.level}/4</span>
                     </div>
                     <div className="flex gap-1">
-                        {maturity.milestones.map((m, i) => (
+                        {maturity.milestones.map((m /*, i*/) => ( // i was unused
                             <div key={m.id} className="flex-1 flex flex-col items-center gap-1">
                                 <div className={`h-1.5 w-full rounded-full ${m.unlocked ? "bg-amber-400" : "bg-white/10"}`} />
                                 <p className={`text-[8px] ${m.unlocked ? "text-amber-400/70" : "text-white/20"}`}>{m.label.split(" ").pop()}</p>

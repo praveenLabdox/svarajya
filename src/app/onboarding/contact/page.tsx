@@ -5,7 +5,6 @@ import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { MessageSquare, ArrowLeft } from "lucide-react";
 import { OnboardingStore } from "@/lib/onboardingStore";
-import { validateControlledEmail, validateIndianMobile } from "@/lib/contactValidation";
 
 const MOCK_OTP = "1234";
 
@@ -21,9 +20,8 @@ function ProgressBar({ step }: { step: number }) {
 
 export default function ContactStep() {
     const router = useRouter();
-    const stored = OnboardingStore.get();
-    const [mobile, setMobile] = useState(() => stored.mobile || "");
-    const [email, setEmail] = useState(() => stored.email || "");
+    const [mobile, setMobile] = useState(() => OnboardingStore.get().mobile || "");
+    const [email, setEmail] = useState(() => OnboardingStore.get().email || "");
     const [whatsapp, setWhatsapp] = useState(false);
     const [otpState, setOtpState] = useState<"none" | "sending" | "sent" | "verified">("none");
     const [otpInput, setOtpInput] = useState("");
@@ -31,21 +29,10 @@ export default function ContactStep() {
     const [unlocked, setUnlocked] = useState(false);
 
     const handleSendOtp = async () => {
-        const mobileResult = validateIndianMobile(mobile);
-        if (!mobileResult.valid) {
-            setError(mobileResult.message || "Enter a valid 10-digit mobile number.");
+        if (mobile.replace(/\D/g, "").length < 10) {
+            setError("Enter a valid 10-digit mobile number.");
             return;
         }
-
-        if (email.trim()) {
-            const emailResult = validateControlledEmail(email);
-            if (!emailResult.valid) {
-                setError(emailResult.message || "Enter a valid email.");
-                return;
-            }
-        }
-
-        setMobile(mobileResult.normalized);
         setError("");
         setOtpState("sending");
         await new Promise(r => setTimeout(r, 1500));
@@ -53,20 +40,6 @@ export default function ContactStep() {
     };
 
     const handleVerify = () => {
-        const mobileResult = validateIndianMobile(mobile);
-        if (!mobileResult.valid) {
-            setError(mobileResult.message || "Enter a valid 10-digit mobile number.");
-            return;
-        }
-
-        const normalizedEmail = email.trim()
-            ? validateControlledEmail(email)
-            : { valid: true, normalized: "" };
-        if (!normalizedEmail.valid) {
-            setError(normalizedEmail.message || "Enter a valid email.");
-            return;
-        }
-
         if (otpInput !== MOCK_OTP) {
             setError("Invalid code. Enter the 4-digit OTP sent to your mobile.");
             return;
@@ -74,11 +47,7 @@ export default function ContactStep() {
         setError("");
         setOtpState("verified");
         setUnlocked(true);
-        OnboardingStore.set({
-            mobile: mobileResult.normalized,
-            email: normalizedEmail.normalized || "",
-            whatsappEnabled: whatsapp,
-        });
+        OnboardingStore.set({ mobile, email, whatsappEnabled: whatsapp });
         setTimeout(() => router.push("/onboarding/firstwin"), 1200);
     };
 
@@ -124,11 +93,9 @@ export default function ContactStep() {
                                 <input
                                     type="tel"
                                     value={mobile}
-                                    onChange={e => { setMobile(e.target.value.replace(/\D/g, "").slice(0, 10)); setError(""); }}
+                                    onChange={e => { setMobile(e.target.value); setError(""); }}
                                     placeholder="10-digit number"
                                     maxLength={10}
-                                    inputMode="numeric"
-                                    pattern="[0-9]{10}"
                                     className="flex-1 bg-white/6 border border-white/15 rounded-xl px-4 py-3 text-white placeholder-white/25 focus:outline-none focus:border-amber-400/60 transition-colors"
                                     disabled={otpState !== "none"}
                                 />
@@ -180,7 +147,7 @@ export default function ContactStep() {
                             <input
                                 type="email"
                                 value={email}
-                                onChange={e => { setEmail(e.target.value.trim().toLowerCase()); setError(""); }}
+                                onChange={e => setEmail(e.target.value)}
                                 placeholder="yourname@email.com"
                                 className="w-full bg-white/6 border border-white/15 rounded-xl px-4 py-3 text-white placeholder-white/25 focus:outline-none focus:border-amber-400/60 transition-colors text-sm"
                             />

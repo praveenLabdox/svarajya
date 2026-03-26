@@ -61,18 +61,6 @@ html.light {
     color: var(--color-rajya-text);
     transition: background-color 0.3s ease, color 0.3s ease;
   }
-
-  /* Keep native dropdown surfaces readable in dark mode. */
-  select {
-    color: var(--color-rajya-text);
-    background-color: #0b1220;
-  }
-
-  option,
-  optgroup {
-    color: #f8fafc;
-    background-color: #0b1220;
-  }
 }
 
 /* ==========================================================================

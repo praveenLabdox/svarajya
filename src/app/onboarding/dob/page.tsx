@@ -20,9 +20,8 @@ function ProgressBar({ step }: { step: number }) {
 
 export default function DOBStep() {
     const router = useRouter();
-    const stored = OnboardingStore.get();
-    const [dob, setDob] = useState(() => stored.dob || "");
-    const [lifePhase, setLifePhase] = useState(() => stored.lifePhase || (stored.dob ? deriveLifePhase(stored.dob) : ""));
+    const [dob, setDob] = useState(() => OnboardingStore.get().dob || "");
+    const [lifePhase, setLifePhase] = useState(() => OnboardingStore.get().lifePhase || "");
     const [showPhaseEdit, setShowPhaseEdit] = useState(false);
     const [error, setError] = useState("");
     const [placed, setPlaced] = useState(false);

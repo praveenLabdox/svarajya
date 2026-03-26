@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Plus, BarChart3, Calculator } from "lucide-react";
 import { IncomeStore } from "@/lib/incomeStore";
@@ -10,6 +11,8 @@ import { VideoTutorialPlaceholder } from "@/components/ui/VideoTutorialPlacehold
 
 export default function KoshHub() {
     const router = useRouter();
+    const [, setHydrated] = useState(false);
+    useEffect(() => { IncomeStore.hydrate().then(() => setHydrated(true)); }, []);
     const records = IncomeStore.getRecords();
     const monthlyNet = IncomeStore.getMonthlyNetIncome();
     const annualNet = IncomeStore.getAnnualNetIncome();
