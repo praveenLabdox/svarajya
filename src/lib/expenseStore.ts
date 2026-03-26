@@ -172,6 +172,32 @@ export const ExpenseStore = {
             updatedAt: Date.now(),
         };
         _entries.push(entry);
+
+        if (typeof window !== 'undefined') {
+            const { id: _cid, ...rest } = entry;
+            fetch('/api/expenses', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    amount: rest.amount,
+                    date: rest.date,
+                    categoryId: rest.categoryId,
+                    paymentMode: rest.paymentMode,
+                    isRecurring: rest.recurring,
+                    frequency: rest.recurringFrequency,
+                    description: rest.description,
+                    linkedFamilyMemberId: rest.linkedFamilyMemberId,
+                    paidFromAccountId: rest.paidFromAccountId,
+                })
+            }).then(async (res) => {
+                if (res.ok) {
+                    const saved = await res.json();
+                    const idx = _entries.findIndex(e => e.id === entry.id);
+                    if (idx !== -1) _entries[idx].id = saved.id;
+                }
+            }).catch(e => console.warn('Expense sync err', e));
+        }
+
         return entry;
     },
 
@@ -179,6 +205,26 @@ export const ExpenseStore = {
         const entry = _entries.find(e => e.id === id);
         if (!entry) return null;
         Object.assign(entry, patch, { updatedAt: Date.now() });
+
+        if (typeof window !== 'undefined' && !entry.id.startsWith('exp-')) {
+            fetch('/api/expenses', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    id: entry.id,
+                    amount: entry.amount,
+                    date: entry.date,
+                    categoryId: entry.categoryId,
+                    paymentMode: entry.paymentMode,
+                    isRecurring: entry.recurring,
+                    frequency: entry.recurringFrequency,
+                    description: entry.description,
+                    linkedFamilyMemberId: entry.linkedFamilyMemberId,
+                    paidFromAccountId: entry.paidFromAccountId,
+                })
+            }).catch(e => console.warn('Expense sync err', e));
+        }
+
         return entry;
     },
 
@@ -461,5 +507,31 @@ export const ExpenseStore = {
         }));
         _entries = [];
         _subscriptions = [];
+    },
+
+    async hydrate() {
+        if (typeof window === 'undefined') return;
+        try {
+            const res = await fetch('/api/expenses', { cache: 'no-store' });
+            if (!res.ok) return;
+            const dbEntries = await res.json();
+            if (!Array.isArray(dbEntries) || dbEntries.length === 0) return;
+            _entries = dbEntries.map((d: Record<string, unknown>) => ({
+                id: String(d.id),
+                date: d.date ? String(d.date).split('T')[0] : new Date().toISOString().split('T')[0],
+                amount: Number(d.amount) || 0,
+                categoryId: String(d.categoryId || 'other'),
+                paymentMode: String(d.paymentMode || 'upi') as PaymentMode,
+                recurring: !!d.isRecurring,
+                recurringFrequency: d.frequency ? String(d.frequency) as ExpenseFrequency : undefined,
+                description: d.description ? String(d.description) : undefined,
+                linkedFamilyMemberId: d.linkedFamilyMemberId ? String(d.linkedFamilyMemberId) : undefined,
+                paidFromAccountId: d.paidFromAccountId ? String(d.paidFromAccountId) : undefined,
+                createdAt: d.createdAt ? new Date(d.createdAt as string).getTime() : Date.now(),
+                updatedAt: d.createdAt ? new Date(d.createdAt as string).getTime() : Date.now(),
+            })) as ExpenseEntry[];
+        } catch (err) {
+            console.warn('Failed to hydrate expenses', err);
+        }
     },
 };

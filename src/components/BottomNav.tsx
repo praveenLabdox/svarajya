@@ -126,7 +126,7 @@ export function BottomNav() {
             )}
 
             {/* Nav bar */}
-            <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md z-50">
+            <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md z-50 lg:hidden">
                 <div className="bg-slate-950/95 backdrop-blur-md border-t border-white/10 px-2 pb-[env(safe-area-inset-bottom)] flex items-center justify-around">
                     {PRIMARY_TABS.map(item => {
                         const isActive = isTabActive(item.route);

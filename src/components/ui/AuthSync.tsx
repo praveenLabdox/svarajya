@@ -27,23 +27,35 @@ export function AuthSync() {
             if (!session?.user) return; // Middleware protects routes anyway
 
             // --- Step 1: Fetch profile directly from DB (authoritative) ---
-            let dbProfile: Record<string, unknown> | null = null;
+            let dbProfile: any = undefined; // undefined means "not fetched yet", null means "confirmed empty"
             try {
-                const res = await fetch("/api/profile");
+                const res = await fetch("/api/profile", { cache: "no-store" });
                 if (res.ok) {
                     dbProfile = await res.json();
                     console.log("[AuthSync] DB profile fetched:", dbProfile);
                 } else {
                     console.warn("[AuthSync] Profile API returned", res.status);
+                    if (res.status === 401) return; // Unauthorized handled by middleware
+                    if (res.status >= 500) {
+                         console.warn("[AuthSync] Server error, skipping redirect safety gate");
+                         return;
+                    }
+                    dbProfile = null; // Explicit 404/Empty
                 }
             } catch (err) {
-                console.error("[AuthSync] Failed to fetch profile:", err);
+                console.error("[AuthSync] Failed to fetch profile (network error):", err);
+                return; // Network error — don't redirect
             }
 
             // --- Step 2: Determine if profile is complete enough ---
-            // Only require fullName — the essential anchor. dob & occupation are filled during flow.
+            // We only proceed IF we have a definitive answer (managed to talk to DB)
+            if (dbProfile === undefined) return; 
+            
             const hasProfile = dbProfile && typeof dbProfile.fullName === "string" && dbProfile.fullName.trim() !== "";
-            console.log("[AuthSync] hasProfile:", hasProfile, "| pathname:", pathname);
+            
+            // --- Step 3: Actionable Policy ---
+            // - If on Dashboard: Never redirect away. 
+            if (pathname === "/dashboard") return;
 
             if (hasProfile) {
                 // Populate in-memory store from DB data
@@ -55,16 +67,13 @@ export function AuthSync() {
                 localStorage.setItem(LAST_LOGIN_KEY, now);
 
                 // If no previous login on this device → show welcome-back screen
-                // (This fires even on /dashboard since middleware always sends users there after login)
                 if (!lastLogin) {
                     router.replace("/onboarding/firstwin?returning=true");
                     return;
                 }
-                // Otherwise user has seen welcome before — let them stay on dashboard
-
             } else {
-                // --- No profile — start onboarding ---
-                console.log("[AuthSync] No profile found, starting onboarding");
+                // No profile — start onboarding
+                console.log("[AuthSync] No profile found, starting onboarding flow");
                 const googleName = session.user.user_metadata?.full_name;
                 if (googleName) {
                     await OnboardingStore.set({

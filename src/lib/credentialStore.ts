@@ -227,6 +227,22 @@ export const CredentialStore = {
             updatedAt: now(),
         };
         _portals.push(portal);
+
+        if (typeof window !== 'undefined') {
+            const { id: _cid, ...payload } = portal;
+            fetch('/api/credentials', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            }).then(async (res) => {
+                if (res.ok) {
+                    const saved = await res.json();
+                    const idx = _portals.findIndex(p => p.id === portal.id);
+                    if (idx !== -1) _portals[idx].id = saved.id;
+                }
+            }).catch(e => console.warn("Credential sync err", e));
+        }
+
         return portal;
     },
 
@@ -234,6 +250,15 @@ export const CredentialStore = {
         const idx = _portals.findIndex(p => p.id === id);
         if (idx === -1) return null;
         _portals[idx] = { ..._portals[idx], ...patch, updatedAt: now() };
+
+        if (typeof window !== 'undefined') {
+            fetch('/api/credentials', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(_portals[idx])
+            }).catch(e => console.warn("Credential sync err", e));
+        }
+
         return _portals[idx];
     },
 
@@ -409,5 +434,25 @@ export const CredentialStore = {
         _accessMappings = [];
         _masterVerifyBlob = null;
         _vaultUnlockedUntil = 0;
+    },
+
+    async hydrate() {
+        if (typeof window === 'undefined') return;
+        try {
+            const res = await fetch('/api/credentials', { cache: 'no-store' });
+            if (!res.ok) return;
+            const dbPortals = await res.json();
+            if (!Array.isArray(dbPortals) || dbPortals.length === 0) return;
+            _portals = dbPortals.map((d: Record<string, unknown>) => ({
+                ...d,
+                registrationDate: d.registrationDate ? String(d.registrationDate).split('T')[0] : undefined,
+                lastReviewedDate: d.lastReviewedDate ? String(d.lastReviewedDate) : undefined,
+                renewalDate: d.renewalDate ? String(d.renewalDate).split('T')[0] : undefined,
+                createdAt: d.createdAt ? String(d.createdAt) : now(),
+                updatedAt: d.updatedAt ? String(d.updatedAt) : now(),
+            })) as PortalRecord[];
+        } catch (err) {
+            console.warn("Failed to hydrate credentials", err);
+        }
     },
 };

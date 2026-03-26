@@ -152,7 +152,7 @@ export function FileUploader({
                 >
                     <div className="flex items-start gap-3">
                         {preview ? (
-                            // blob: URL previews cannot be optimized by next/image
+                            // blob: URL from URL.createObjectURL — cannot be optimized by next/image
                             // eslint-disable-next-line @next/next/no-img-element
                             <img src={preview} alt="" className="w-12 h-12 rounded-lg object-cover border border-white/10" />
                         ) : (

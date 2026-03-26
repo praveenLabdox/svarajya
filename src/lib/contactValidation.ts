@@ -1,3 +1,5 @@
+
+
 export function normalizeIndianMobile(raw: string): string {
     const digits = raw.replace(/\D/g, "");
 
@@ -12,25 +14,31 @@ export function normalizeIndianMobile(raw: string): string {
     return digits;
 }
 
-export function validateIndianMobile(raw: string): { valid: boolean; message?: string; normalized: string } {
+export function validateIndianMobile(raw: string): { valid: boolean; normalized: string; message?: string } {
     const normalized = normalizeIndianMobile(raw);
-    if (normalized.length !== 10) {
-        return { valid: false, message: "Mobile number must be exactly 10 digits", normalized };
+
+    if (!/^\d{10}$/.test(normalized)) {
+        return { valid: false, normalized, message: "Mobile number must be exactly 10 digits." };
     }
+
     if (!/^[6-9]/.test(normalized)) {
-        return { valid: false, message: "Valid mobile numbers must start with 6, 7, 8, or 9", normalized };
+        return { valid: false, normalized, message: "Mobile number must start with 6, 7, 8, or 9." };
     }
+
     return { valid: true, normalized };
 }
 
-export function validateControlledEmail(email: string): { valid: boolean; message?: string; normalized: string } {
-    const cleaned = email.trim().toLowerCase();
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!cleaned) {
-        return { valid: false, message: "Email is required", normalized: "" };
+export function validateControlledEmail(raw: string): { valid: boolean; normalized: string; message?: string } {
+    const normalized = raw.trim().toLowerCase();
+
+    if (!normalized) {
+        return { valid: false, normalized, message: "Email is required." };
     }
-    if (!emailRegex.test(cleaned)) {
-        return { valid: false, message: "Please enter a valid email address", normalized: cleaned };
+
+    const basic = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized);
+    if (!basic) {
+        return { valid: false, normalized, message: "Please enter a valid email address." };
     }
-    return { valid: true, normalized: cleaned };
+
+    return { valid: true, normalized };
 }

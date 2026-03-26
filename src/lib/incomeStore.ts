@@ -122,6 +122,31 @@ export const IncomeStore = {
             updatedAt: Date.now(),
         };
         _records.push(rec);
+
+        if (typeof window !== 'undefined' && rec.status === 'finalized') {
+            const { id: _cid, ...rest } = rec;
+            const meta = JSON.stringify({ incomeType: rest.incomeType, deductions: rest.deductions, tdsAmount: rest.tdsAmount, riskLevel: rest.riskLevel, allocationMonths: rest.allocationMonths, expectedGrowthPct: rest.expectedGrowthPct, historicalIncome: rest.historicalIncome, notes: rest.notes });
+            fetch('/api/income', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    amount: rest.grossIncome,
+                    date: new Date(rest.createdAt).toISOString(),
+                    source: rest.sourceName,
+                    isRecurring: rest.frequency !== 'one_time',
+                    frequency: rest.frequency !== 'one_time' ? rest.frequency : undefined,
+                    creditAccountId: rest.creditedAccountId,
+                    description: `META:${meta}`,
+                })
+            }).then(async (res) => {
+                if (res.ok) {
+                    const saved = await res.json();
+                    const idx = _records.findIndex(r => r.id === rec.id);
+                    if (idx !== -1) _records[idx].id = saved.id;
+                }
+            }).catch(e => console.warn('Income sync err', e));
+        }
+
         return rec;
     },
 
@@ -137,7 +162,34 @@ export const IncomeStore = {
     },
 
     finalizeRecord(id: string): IncomeRecord | null {
-        return this.updateRecord(id, { status: "finalized" });
+        const rec = this.updateRecord(id, { status: "finalized" });
+
+        if (rec && typeof window !== 'undefined') {
+            const meta = JSON.stringify({ incomeType: rec.incomeType, deductions: rec.deductions, tdsAmount: rec.tdsAmount, riskLevel: rec.riskLevel, allocationMonths: rec.allocationMonths, expectedGrowthPct: rec.expectedGrowthPct, historicalIncome: rec.historicalIncome, notes: rec.notes });
+            const payload: Record<string, unknown> = {
+                amount: rec.grossIncome,
+                date: new Date(rec.createdAt).toISOString(),
+                source: rec.sourceName,
+                isRecurring: rec.frequency !== 'one_time',
+                frequency: rec.frequency !== 'one_time' ? rec.frequency : undefined,
+                creditAccountId: rec.creditedAccountId,
+                description: `META:${meta}`,
+            };
+            if (rec.id && !rec.id.startsWith('inc-')) payload.id = rec.id;
+            fetch('/api/income', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            }).then(async (res) => {
+                if (res.ok) {
+                    const saved = await res.json();
+                    const idx = _records.findIndex(r => r.id === rec.id);
+                    if (idx !== -1) _records[idx].id = saved.id;
+                }
+            }).catch(e => console.warn('Income finalize sync err', e));
+        }
+
+        return rec;
     },
 
     deleteRecord(id: string): boolean {
@@ -481,5 +533,61 @@ export const IncomeStore = {
     // ——— Reset ———
     clear(): void {
         _records = [];
+    },
+
+    async hydrate() {
+        if (typeof window === 'undefined') return;
+        try {
+            const res = await fetch('/api/income', { cache: 'no-store' });
+            if (!res.ok) return;
+            const dbEntries = await res.json();
+            if (!Array.isArray(dbEntries) || dbEntries.length === 0) return;
+            _records = dbEntries.map((d: Record<string, unknown>) => {
+                let incomeType: IncomeType = 'other';
+                let deductions = 0;
+                let tdsAmount: number | undefined;
+                let riskLevel: RiskLevel = 'medium';
+                let allocationMonths: number | undefined;
+                let expectedGrowthPct: number | undefined;
+                let historicalIncome: number | undefined;
+                let notes: string | undefined;
+                const desc = String(d.description || '');
+                if (desc.startsWith('META:')) {
+                    try {
+                        const meta = JSON.parse(desc.slice(5));
+                        incomeType = meta.incomeType || 'other';
+                        deductions = meta.deductions || 0;
+                        tdsAmount = meta.tdsAmount;
+                        riskLevel = meta.riskLevel || 'medium';
+                        allocationMonths = meta.allocationMonths;
+                        expectedGrowthPct = meta.expectedGrowthPct;
+                        historicalIncome = meta.historicalIncome;
+                        notes = meta.notes;
+                    } catch { /* ignore parse errors */ }
+                }
+                const gross = Number(d.amount) || 0;
+                const freq = (d.isRecurring && d.frequency) ? String(d.frequency) as Frequency : (d.isRecurring ? 'monthly' : 'one_time');
+                return {
+                    id: String(d.id),
+                    status: 'finalized' as RecordStatus,
+                    incomeType,
+                    sourceName: String(d.source || ''),
+                    frequency: freq,
+                    grossIncome: gross,
+                    deductions,
+                    netIncome: gross - deductions,
+                    allocationMonths,
+                    tdsAmount,
+                    riskLevel,
+                    expectedGrowthPct,
+                    historicalIncome,
+                    notes,
+                    createdAt: d.createdAt ? new Date(d.createdAt as string).getTime() : Date.now(),
+                    updatedAt: d.createdAt ? new Date(d.createdAt as string).getTime() : Date.now(),
+                };
+            }) as IncomeRecord[];
+        } catch (err) {
+            console.warn('Failed to hydrate income', err);
+        }
     },
 };

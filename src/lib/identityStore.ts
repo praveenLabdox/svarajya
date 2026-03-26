@@ -2,6 +2,7 @@
 // Mirrors OnboardingStore pattern. Will be replaced by Supabase in production.
 
 import { OnboardingStore } from "./onboardingStore";
+import { validateControlledEmail, validateIndianMobile } from "./contactValidation";
 
 export type DocType = "aadhaar" | "pan" | "passport" | "dl" | "voter" | "other";
 
@@ -120,13 +121,20 @@ export const IdentityStore = {
         };
         _docs.push(doc);
 
-        // Sync to API
+        // Sync to API — omit client-generated id so API creates new record
         if (typeof window !== 'undefined') {
+            const { id: _cid, ...payload } = doc;
             fetch('/api/identity', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ...doc, isNew: true })
-            }).catch(e => console.error("Identity sync err", e));
+                body: JSON.stringify(payload)
+            }).then(async (res) => {
+                if (res.ok) {
+                    const saved = await res.json();
+                    const idx = _docs.findIndex(d => d.id === doc.id);
+                    if (idx !== -1) _docs[idx].id = saved.id;
+                }
+            }).catch(e => console.warn("Identity sync err", e));
         }
 
         return doc;
@@ -140,13 +148,12 @@ export const IdentityStore = {
             _docs[idx].normalizedDocNumber = normalizeDocNumber(partial.docNumber);
         }
 
-        // Sync update
         if (typeof window !== 'undefined') {
             fetch('/api/identity', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ..._docs[idx], isUpdate: true }) // passing flag
-            }).catch(e => console.error("Identity sync err", e));
+                body: JSON.stringify(_docs[idx])
+            }).catch(e => console.warn("Identity sync err", e));
         }
 
         return _docs[idx];
@@ -164,7 +171,16 @@ export const IdentityStore = {
 
     // ——— Contacts ———
     addContact(type: "mobile" | "email", value: string, label?: string): ContactPoint {
-        const cp: ContactPoint = { id: genId(), type, value, label, createdAt: Date.now() };
+        const trimmed = value.trim();
+        const normalizedValue = type === "mobile"
+            ? validateIndianMobile(trimmed)
+            : validateControlledEmail(trimmed);
+
+        if (!normalizedValue.valid) {
+            throw new Error(normalizedValue.message || "Invalid contact value");
+        }
+
+        const cp: ContactPoint = { id: genId(), type, value: normalizedValue.normalized, label, createdAt: Date.now() };
         _contacts.push(cp);
         return cp;
     },
@@ -245,27 +261,38 @@ export const IdentityStore = {
         const existing = _contacts.filter(c => c.label === "Primary");
         if (existing.length > 0) return; // already seeded
         if (data.mobile) {
-            this.addContact("mobile", data.mobile, "Primary");
+            try {
+                this.addContact("mobile", data.mobile, "Primary");
+            } catch {
+                // Ignore invalid legacy values during bootstrap.
+            }
         }
         if (data.email) {
-            this.addContact("email", data.email, "Primary");
+            try {
+                this.addContact("email", data.email, "Primary");
+            } catch {
+                // Ignore invalid legacy values during bootstrap.
+            }
         }
     },
 
-    // ——— Hydrate from Server ———
     async hydrate() {
-        if (typeof window !== 'undefined') {
-            try {
-                const res = await fetch('/api/identity');
-                if (res.ok) {
-                    const dbDocs = await res.json();
-                    if (dbDocs && dbDocs.length > 0) {
-                        _docs = [...dbDocs];
-                    }
-                }
-            } catch (err) {
-                console.error("Failed to hydrate identity", err);
-            }
+        if (typeof window === 'undefined') return;
+        try {
+            const res = await fetch('/api/identity', { cache: 'no-store' });
+            if (!res.ok) return;
+            const dbDocs = await res.json();
+            if (!Array.isArray(dbDocs) || dbDocs.length === 0) return;
+            _docs = dbDocs.map((d: Record<string, unknown>) => ({
+                ...d,
+                dobOnDoc: d.dobOnDoc ? String(d.dobOnDoc).split('T')[0] : undefined,
+                expiryDate: d.expiryDate ? String(d.expiryDate).split('T')[0] : undefined,
+                issueDate: d.issueDate ? String(d.issueDate).split('T')[0] : undefined,
+                createdAt: d.createdAt ? new Date(d.createdAt as string).getTime() : Date.now(),
+                updatedAt: d.updatedAt ? new Date(d.updatedAt as string).getTime() : Date.now(),
+            })) as IdentityDoc[];
+        } catch (err) {
+            console.warn("Failed to hydrate identity", err);
         }
     },
 
