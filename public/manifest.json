@@ -1,0 +1,21 @@
+{
+  "name": "Sva-Rajya",
+  "short_name": "Sva-Rajya",
+  "description": "Sovereign financial operating system — documents, income, banks, expenses, protection, and legacy planning.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#020617",
+  "theme_color": "#0f172a",
+  "icons": [
+    {
+      "src": "/scroll.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/scroll.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
