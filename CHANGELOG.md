@@ -12,15 +12,20 @@ Format follows [Keep a Changelog](https://keepachangelog.com/).
 - `develop` branch for staging workflow
 - Bank summary backend covering accounts, cash wallet, liquidity settings, and derived flow metrics
 - Supabase-ready branded confirmation email template at `supabase-email-templates/confirm-signup.html`
+- API hydration for Identity, Credentials, Kosh, and Vyaya hubs so persisted records reload on page open
 
 ### Changed
 - Bank hub, add-account, cash, flow, and idle screens now use the backend summary API instead of local seeded bank state
 - Dashboard bank guidance now reads real bank account counts from the API
 - Prisma config now loads `.env.local` automatically for local CLI commands
+- Identity, credential, income, and expense stores now write through to their existing API routes instead of staying refresh-local
+- Income persistence now preserves richer client-side fields by encoding extended metadata into the stored description payload
 
 ### Fixed
 - Duplicate `disabled` props removed from the bank add-account save button
 - Bank account save button now exits early when saving is in progress or a duplicate warning is active
+- Identity document creation no longer sends client-generated IDs to the API, allowing server-side UUID creation to succeed
+- Identity hydration now normalizes server date fields for document detail and expiry flows
 
 ---
 
